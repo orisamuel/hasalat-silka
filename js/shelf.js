@@ -7,9 +7,9 @@
   'use strict';
 
   const $ = s => document.querySelector(s);
-  const arena = $('#arena'), floater = $('#floater'), sprite = $('#sSprite'), bubble = $('#sBubble');
+  const arena = $('#arena'), floater = $('#floater'), sprite = $('#sSprite'), bubble = $('#sBubble'), play = $('#shelfPlay');
   const bar = $('#sBar'), barBox = bar.parentElement, toastEl = $('#sToast'), shelf = $('#shelf'), foot = $('#sFootHint'), hint = $('#sHint');
-  const els = { score: $('#sScore'), level: $('#sLevel'), lives: $('#sLives') };
+  const els = { score: $('#sScore'), level: $('#sLevel'), lives: $('#sLives'), combo: $('#sComboBadge') };
   const LIVES = 3, PER_LEVEL = 4;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
@@ -38,7 +38,7 @@
   let S = null, raf = 0, roundT = 0, toastT = 0, bubbleT = 0, lastT = 0;
 
   function reset() {
-    S = { score: 0, level: 1, lives: LIVES, hits: 0, wrong: 0, wrongBy: {}, kills: {}, running: false, round: null, lastEnemy: null };
+    S = { score: 0, level: 1, lives: LIVES, hits: 0, wrong: 0, wrongBy: {}, kills: {}, running: false, round: null, lastEnemy: null, combo: 0, bestCombo: 0 };
   }
   function start() {
     reset();
@@ -53,6 +53,7 @@
     if (S && S.round) S.round.active = false;
     cancelAnimationFrame(raf);
     clearTimeout(roundT); clearTimeout(bubbleT);
+    Fx.closeInterstitial();
     bubble.hidden = true;
     floater.classList.add('is-hidden');
   }
@@ -173,7 +174,10 @@
 
     const now = performance.now();
     const frac = clamp((R.deadline - now) / R.cfg.limit, 0, 1);
-    const pts = 100 + Math.round(frac * 100) + (S.level - 1) * 20 + (R.enemy.bonus ? 150 : 0);
+    const fast = frac >= .6;                                  // סולק ב-40% הראשונים של הזמן
+    S.combo++; S.bestCombo = Math.max(S.bestCombo, S.combo);
+    const mult = Math.min(5, 1 + Math.floor(S.combo / 3));
+    const pts = R.enemy.points * mult + (fast ? 50 : 0) + (S.level - 1) * 10;   // ניקוד אחיד: דמות × קומבו + מהיר + מדרגה
     S.score += pts; S.hits++;
     S.kills[R.enemy.id] = (S.kills[R.enemy.id] || 0) + 1;
     App.stats.addKill(R.enemy.id);
@@ -188,23 +192,35 @@
     setTimeout(() => sprite.classList.add('gone'), 90);
     Sfx.play('poof');
     if (R.enemy.bonus) Sfx.play('bonus');
+    if (S.combo % 3 === 0) Sfx.play('combo');
     bubble.hidden = true;
-    toast(`<b>${R.enemy.name}</b> סולק! ${R.enemy.quip}`, R.enemy.bonus ? 'is-bonus' : '');
+    let msg = `<b>${R.enemy.name}</b> סולק! ${R.enemy.quip}`;
+    if (fast) msg += ' ⚡ מהיר!';
+    if (S.combo >= 3 && S.combo % 3 === 0) msg += ` · קומבו ×${mult}`;
+    toast(msg, R.enemy.bonus ? 'is-bonus' : '');
     updateHud(true);
 
-    let delay = 950;
+    clearTimeout(roundT);
     if (S.hits % PER_LEVEL === 0) {
+      // עולים שלב: אחרי הפוף – כרטיס קצר שאומר מה השתנה, ממשיך לבד (לחיצה מדלגת)
+      const prev = levelCfg(S.level);
       S.level++;
-      delay = 1700;
-      setTimeout(() => {
+      updateHud();
+      const cfg = levelCfg(S.level);
+      const added = cfg.count > prev.count ? Products.PRODUCTS[cfg.count - 1] : null;
+      const changes = [`${cfg.count} מוצרים על המדף`, `${(cfg.limit / 1000).toFixed(1)} שניות לסיבוב`];
+      if (added) changes.unshift(`חדש: ${added.name}`);
+      if (!cfg.labels && prev.labels) changes.push('בלי תוויות!');
+      if (cfg.shuffleOnWrong && !prev.shuffleOnWrong) changes.push('המדף מתערבב בכל טעות');
+      roundT = setTimeout(() => {
         if (!S.running) return;
         Sfx.play('levelup');
-        toast(`🆙 שלב ${S.level}! ${LEVEL_LINES[S.level] || 'המדף מתפוצץ ממוצרים. הזמן נגמר מהר.'}`, 'is-bonus');
-        updateHud();
-      }, 650);
+        Fx.interstitial({ host: play, kicker: '🆙 עולים שלב', title: `שלב ${S.level}`, sub: LEVEL_LINES[S.level] || 'המדף מתפוצץ ממוצרים. הזמן נגמר מהר.',
+          line: changes.join(' · '), auto: 2400, tapToSkip: true }).then(() => { if (S.running) startRound(false); });
+      }, 900);
+    } else {
+      roundT = setTimeout(() => startRound(false), 950);
     }
-    clearTimeout(roundT);
-    roundT = setTimeout(() => startRound(false), delay);
   }
 
   /* ---- לא נכון: תגובה מצחיקה + עונש זמן ---- */
@@ -213,6 +229,7 @@
     R.wrongs++; S.wrong++;
     S.wrongBy[p.id] = (S.wrongBy[p.id] || 0) + 1;
     R.deadline -= 1000;
+    if (S.combo > 0) { S.combo = 0; updateHud(); }
     b.classList.remove('is-shaking'); void b.offsetWidth; b.classList.add('is-shaking');
     say(Products.wrongLine(p), 'is-laugh', 2000);
     Sfx.play('bad');
@@ -237,7 +254,7 @@
     requestAnimationFrame(() => { floater.style.transform = `translate(${toX}px, ${Math.round(R.pos.y - 90)}px) rotate(${toX < 0 ? -22 : 22}deg)`; });
     setTimeout(() => { bubble.hidden = true; }, 700);
 
-    S.lives--;
+    S.lives--; S.combo = 0;
     updateHud();
     Sfx.play('life');
     clearTimeout(roundT);
@@ -265,6 +282,9 @@
     let lives = '';
     for (let i = 0; i < LIVES; i++) lives += `<span class="${i < S.lives ? '' : 'lost'}">🥬</span>`;
     els.lives.innerHTML = lives;
+    const mult = Math.min(5, 1 + Math.floor(S.combo / 3));
+    els.combo.hidden = mult <= 1;
+    els.combo.textContent = `קומבו ×${mult}`;
   }
 
   function end() {
@@ -274,7 +294,7 @@
     let worst = null;
     for (const id in S.wrongBy) if (!worst || S.wrongBy[id] > S.wrongBy[worst]) worst = id;
     const wp = worst ? Products.PRODUCTS.find(p => p.id === worst) : null;
-    App.showResult({ mode: 'shelf', score: S.score, level: S.level, hits: S.hits, wrong: S.wrong, worst: wp ? { name: wp.name, n: S.wrongBy[worst] } : null, kills: S.kills });
+    App.showResult({ mode: 'shelf', score: S.score, level: S.level, hits: S.hits, wrong: S.wrong, bestCombo: S.bestCombo, worst: wp ? { name: wp.name, n: S.wrongBy[worst] } : null, kills: S.kills });
   }
 
   window.Shelf = { start, stop };

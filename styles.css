@@ -210,6 +210,28 @@ svg .h{display:none;}
 @keyframes shake{0%,100%{transform:translateX(0) rotate(0);}20%{transform:translateX(-7px) rotate(-5deg);}40%{transform:translateX(7px) rotate(5deg);}60%{transform:translateX(-5px) rotate(-3deg);}80%{transform:translateX(5px) rotate(3deg);}}
 @keyframes bagPop{0%{transform:scale(1);}40%{transform:scale(1.18) rotate(-6deg);}100%{transform:scale(1);}}
 
+.combo-badge{position:absolute; bottom:10px; right:10px; z-index:6; background:var(--beet); color:#fff; font-weight:900; font-size:13.5px;
+  padding:4px 11px; border-radius:999px; box-shadow:var(--shadow-sm); pointer-events:none; animation:pop .2s ease both;}
+.combo-badge--sky{bottom:74px;}
+.combo-badge[hidden]{display:none;}
+
+/* =================== INTERSTITIAL (בין גלים / שלבים) =================== */
+.play{position:relative; display:flex; flex-direction:column; gap:10px;}
+.inter{position:absolute; inset:0; z-index:30; display:flex; align-items:center; justify-content:center; padding:16px;
+  background:rgba(20,35,10,.55); border-radius:var(--radius); animation:fadeUp .22s ease both; cursor:pointer;}
+.inter__card{background:var(--paper); border-radius:22px; padding:18px 18px 14px; width:100%; max-width:340px; text-align:center;
+  box-shadow:var(--shadow); border:3px solid #fff; outline:3px solid var(--green); outline-offset:-3px; animation:pop .3s ease both;}
+.inter__kicker{display:inline-block; background:var(--ink); color:#fff; font-weight:800; font-size:12.5px; padding:4px 12px; border-radius:999px;}
+.inter__title{font-weight:900; font-size:clamp(28px,8vw,36px); line-height:1.1; margin-top:8px;}
+.inter__sub{font-weight:600; font-size:14.5px; color:var(--ink-soft); margin-top:6px; line-height:1.35;}
+.inter__line{font-size:13px; color:var(--green-d); font-weight:700; margin-top:8px; background:var(--bg-1); border-radius:12px; padding:6px 10px; line-height:1.35;}
+.inter__btn{margin-top:12px; width:100%; border:none; border-radius:999px; padding:12px; font-weight:800; font-size:16px; background:var(--green); color:#fff;
+  box-shadow:var(--shadow-sm); cursor:pointer; transition:transform .12s;}
+.inter__btn:hover{transform:translateY(-2px);}
+.inter__bar{height:6px; background:#e6efdc; border-radius:999px; overflow:hidden; margin-top:10px;}
+.inter__bar i{display:block; height:100%; width:100%; background:var(--green);}
+.inter__skip{display:block; font-size:11.5px; color:var(--muted); margin-top:6px; font-weight:600;}
+
 /* =================== HAND + FX =================== */
 .hand{position:fixed; left:0; top:0; width:150px; height:200px; pointer-events:none; z-index:60; opacity:0; transition:opacity .15s ease; will-change:transform;}
 .hand.is-on{opacity:1;}

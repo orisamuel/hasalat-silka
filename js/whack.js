@@ -6,7 +6,12 @@
 
   const $ = s => document.querySelector(s);
   const DUR = 60000;
-  const field = $('#field');
+  const field = $('#field'), fieldWrap = field.parentElement;
+  const WAVES = [20000, 40000];
+  const WAVE_TEXT = [
+    { kicker: 'גל 2 מתוך 3', title: 'מהר יותר', sub: 'הם צצים מהר יותר, ולפעמים שניים ביחד. 40 שניות נשארו.' },
+    { kicker: 'גל 3 מתוך 3', title: 'הגל האחרון', sub: 'שלושה בו-זמנית. 20 שניות. תנו בראש.' }
+  ];
   const els = { score: $('#wScore'), bar: $('#wBar'), time: $('#wTime'), combo: $('#wCombo'), toast: $('#wToast') };
   const timerBox = els.bar.closest('.hud__timer');
   const lerp = (a, b, t) => a + (b - a) * t;
@@ -33,7 +38,7 @@
   }
 
   function reset() {
-    S = { score: 0, hits: 0, misses: 0, escapes: 0, decoyHits: 0, combo: 0, bestCombo: 0, kills: {}, startAt: 0, nextSpawn: 0, running: false, lastEnemy: null };
+    S = { score: 0, hits: 0, misses: 0, escapes: 0, decoyHits: 0, combo: 0, bestCombo: 0, kills: {}, startAt: 0, nextSpawn: 0, running: false, lastEnemy: null, waveIdx: 0, paused: false };
   }
 
   function start() {
@@ -54,6 +59,7 @@
     if (S) S.running = false;
     cancelAnimationFrame(raf);
     clearTimeout(restT);
+    Fx.closeInterstitial();
     holes.forEach(h => clearHole(h));
     Fx.Hand.hide();
   }
@@ -81,7 +87,26 @@
     for (const h of holes) if (h.state === 'up' && now >= h.downAt) escape(h);
 
     if (remaining <= 0) return end();
+    if (S.waveIdx < WAVES.length && elapsed >= WAVES[S.waveIdx]) return breather(now);
     raf = requestAnimationFrame(tick);
+  }
+
+  // נשימה בין גלים: השעון עוצר, הבורות מתרוקנים, כרטיס לשנייה וחצי (לחיצה מדלגת)
+  function breather(now) {
+    const t = WAVE_TEXT[S.waveIdx];
+    S.waveIdx++;
+    S.paused = true;
+    cancelAnimationFrame(raf);
+    holes.forEach(h => { if (h.state === 'up') goDown(h); });
+    Sfx.play('levelup');
+    Fx.interstitial({ host: fieldWrap, kicker: t.kicker, title: t.title, sub: t.sub, auto: 1500, tapToSkip: true }).then(() => {
+      if (!S.running) return;
+      const resumeAt = performance.now();
+      S.startAt += resumeAt - now;          // הזמן שעמדנו לא נספר
+      S.nextSpawn = resumeAt + 350;
+      S.paused = false;
+      raf = requestAnimationFrame(tick);
+    });
   }
 
   function spawn(now, p) {
@@ -113,15 +138,18 @@
   }
 
   function escape(h) {
-    S.escapes++;
-    if (S.combo > 0) { S.combo = 0; updateHud(); }
     const c = Fx.centerOf(h.el);
-    Fx.floatText(c.x, c.y - 24, h.decoy ? '' : 'ברח!', 'is-muted');
+    if (h.decoy) { Fx.floatText(c.x, c.y - 24, '', 'is-muted'); goDown(h); return; }   // שקית שירדה – בלי עונש
+    S.escapes++;
+    S.combo = 0;
+    S.score = Math.max(0, S.score - 25);
+    Fx.floatText(c.x, c.y - 24, 'ברח! −25', 'is-bad');
+    updateHud();
     goDown(h);
   }
 
   function onDown(e) {
-    if (!S || !S.running) return;
+    if (!S || !S.running || S.paused) return;
     if (e.pointerType === 'mouse' && e.button !== 0) return;
     Sfx.unlock();
     const x = e.clientX, y = e.clientY;
@@ -162,7 +190,7 @@
     S.bestCombo = Math.max(S.bestCombo, S.combo);
     const mult = Math.min(5, 1 + Math.floor(S.combo / 3));
     const fast = now - h.upAt < 420;
-    const pts = e.points * mult + (fast ? 50 : 0);
+    const pts = e.points * mult + (fast ? 50 : 0) + S.waveIdx * 10;   // ניקוד אחיד: דמות × קומבו + מהיר + מדרגה
     S.score += pts;
     S.kills[e.id] = (S.kills[e.id] || 0) + 1;
     App.stats.addKill(e.id);

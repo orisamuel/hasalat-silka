@@ -72,10 +72,52 @@
     el.textContent = text;
     return el;
   }
+  /* ---- כרטיס ביניים בין גלים / שלבים ----
+     host: אזור המשחק (position:relative). button: טקסט כפתור (אופציונלי). auto: ms להמשך אוטומטי. tapToSkip: לחיצה ממשיכה. */
+  let interEl = null, interResolve = null, interT = 0;
+  function interstitial(o) {
+    closeInterstitial();
+    return new Promise(resolve => {
+      interResolve = resolve;
+      const el = document.createElement('div');
+      el.className = 'inter';
+      const tap = o.tapToSkip !== false;
+      el.innerHTML = `<div class="inter__card">
+        ${o.kicker ? `<div class="inter__kicker">${o.kicker}</div>` : ''}
+        <div class="inter__title">${o.title}</div>
+        ${o.sub ? `<p class="inter__sub">${o.sub}</p>` : ''}
+        ${o.line ? `<p class="inter__line">${o.line}</p>` : ''}
+        ${o.button ? `<button type="button" class="inter__btn">${o.button}</button>` : ''}
+        ${o.auto ? `<div class="inter__bar"><i></i></div>` : ''}
+        ${tap && !o.button ? `<small class="inter__skip">לחצו כדי להמשיך</small>` : ''}
+      </div>`;
+      o.host.appendChild(el);
+      interEl = el;
+      const done = () => {
+        if (interEl !== el) return;
+        el.remove(); interEl = null; clearTimeout(interT);
+        const r = interResolve; interResolve = null;
+        if (r) r();
+      };
+      if (o.button) el.querySelector('.inter__btn').addEventListener('click', e => { e.stopPropagation(); done(); });
+      if (tap) el.addEventListener('click', done);
+      if (o.auto) {
+        const bar = el.querySelector('.inter__bar i');
+        requestAnimationFrame(() => { bar.style.transition = `width ${o.auto}ms linear`; bar.style.width = '0%'; });
+        interT = setTimeout(done, o.auto);
+      }
+    });
+  }
+  function closeInterstitial() {
+    if (interEl) { interEl.remove(); interEl = null; }
+    clearTimeout(interT);
+    if (interResolve) { const r = interResolve; interResolve = null; r(); }
+  }
+
   function centerOf(el) {
     const r = el.getBoundingClientRect();
     return { x: r.left + r.width / 2, y: r.top + r.height / 2, r };
   }
 
-  window.Fx = { Hand, burstLeaves, poof, floatText, stamp, centerOf };
+  window.Fx = { Hand, burstLeaves, poof, floatText, stamp, centerOf, interstitial, closeInterstitial };
 })();

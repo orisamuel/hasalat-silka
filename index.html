@@ -95,7 +95,7 @@
       </div>
 
       <div class="game__foot">
-        <span class="hint">🥬 עלה על האויב · אל תפגעו בשקית חסלט!</span>
+        <span class="hint">🥬 עלה על האויב · ברח: −25 · שקית חסלט: −150</span>
         <button class="quit" id="wQuit">✕ יציאה</button>
       </div>
     </section>
@@ -108,6 +108,7 @@
         <div class="hud__stat"><span>חיים</span><b id="sLives" class="lives">🥬🥬🥬</b></div>
       </div>
 
+      <div class="play" id="shelfPlay">
       <div class="arena" id="arena">
         <div class="arena__timer"><i id="sBar"></i></div>
         <div class="floater" id="floater">
@@ -115,6 +116,7 @@
           <div class="floater__shadow"></div>
         </div>
         <div class="bubble" id="sBubble" hidden></div>
+        <div class="combo-badge" id="sComboBadge" hidden></div>
         <div class="toast toast--arena" id="sToast" hidden></div>
         <p class="arena__hint" id="sHint">מהר! תפסו מהמדף את <b>עלי הסלק</b> של חסלט</p>
       </div>
@@ -126,6 +128,7 @@
         </div>
         <div class="shelf" id="shelf"></div>
       </section>
+      </div>
 
       <div class="game__foot">
         <span class="hint">לחיצה על המוצר הלא-נכון = האויב צוחק ואתם מפסידים זמן</span>
@@ -145,6 +148,7 @@
         <div class="sky__ground" id="skyGround"></div>
         <div class="gun" id="gun" aria-hidden="true"></div>
         <div class="toast" id="gToast" hidden></div>
+        <div class="combo-badge combo-badge--sky" id="gComboBadge" hidden></div>
         <p class="sky__hint" id="gHint">לחצו על אויב שצונח – העלה עף אליו מהצרור 🥬</p>
       </div>
 
