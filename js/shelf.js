@@ -150,8 +150,8 @@
       shelf.appendChild(row);
     }
     foot.textContent = S.level === 1
-      ? 'שלב 1: כוסברה, פטרוזיליה או עלי סלק? רק אחד מהם מחסל.'
-      : `שלב ${S.level}: ${cfg.count} מוצרים${cfg.labels ? '' : ' · בלי תוויות!'}${cfg.shuffleOnWrong ? ' · המדף מתערבב בכל טעות' : ''} · ${(cfg.limit / 1000).toFixed(1)} שניות`;
+      ? 'כוסברה, פטרוזיליה או עלי סלק?'
+      : `שלב ${S.level} · ${cfg.count} מוצרים · ${(cfg.limit / 1000).toFixed(1)} שנ׳`;
   }
 
   shelf.addEventListener('pointerdown', ev => {
@@ -188,16 +188,13 @@
     Fx.burstLeaves(c.x, c.y, 8);
     Fx.stamp(c.x, c.y - 6, 'סוּלַק!');
     arena.classList.remove('is-flash'); void arena.offsetWidth; arena.classList.add('is-flash');
-    Fx.floatText(c.x, c.y + 46, '+' + pts, R.enemy.bonus ? 'is-bonus' : 'is-good');
+    Fx.floatText(c.x, c.y + 46, (fast ? '⚡ ' : '') + '+' + pts, R.enemy.bonus ? 'is-bonus' : 'is-good');
     setTimeout(() => sprite.classList.add('gone'), 90);
     Sfx.play('poof');
     if (R.enemy.bonus) Sfx.play('bonus');
     if (S.combo % 3 === 0) Sfx.play('combo');
     bubble.hidden = true;
-    let msg = `<b>${R.enemy.name}</b> סולק! ${R.enemy.quip}`;
-    if (fast) msg += ' ⚡ מהיר!';
-    if (S.combo >= 3 && S.combo % 3 === 0) msg += ` · קומבו ×${mult}`;
-    toast(msg, R.enemy.bonus ? 'is-bonus' : '');
+    toast(`<b>${R.enemy.name}</b>: ${R.enemy.quip}`, R.enemy.bonus ? 'is-bonus' : '');
     updateHud(true);
 
     clearTimeout(roundT);
@@ -208,15 +205,15 @@
       updateHud();
       const cfg = levelCfg(S.level);
       const added = cfg.count > prev.count ? Products.PRODUCTS[cfg.count - 1] : null;
-      const changes = [`${cfg.count} מוצרים על המדף`, `${(cfg.limit / 1000).toFixed(1)} שניות לסיבוב`];
+      const changes = [`${cfg.count} מוצרים`, `${(cfg.limit / 1000).toFixed(1)} שנ׳`];
       if (added) changes.unshift(`חדש: ${added.name}`);
       if (!cfg.labels && prev.labels) changes.push('בלי תוויות!');
-      if (cfg.shuffleOnWrong && !prev.shuffleOnWrong) changes.push('המדף מתערבב בכל טעות');
+      if (cfg.shuffleOnWrong && !prev.shuffleOnWrong) changes.push('מתערבב בכל טעות');
       roundT = setTimeout(() => {
         if (!S.running) return;
         Sfx.play('levelup');
-        Fx.interstitial({ host: play, kicker: '🆙 עולים שלב', title: `שלב ${S.level}`, sub: LEVEL_LINES[S.level] || 'המדף מתפוצץ ממוצרים. הזמן נגמר מהר.',
-          line: changes.join(' · '), auto: 2400, tapToSkip: true }).then(() => { if (S.running) startRound(false); });
+        Fx.interstitial({ host: play, title: `שלב ${S.level}`, sub: LEVEL_LINES[S.level] || 'המדף מתפוצץ ממוצרים. הזמן נגמר מהר.',
+          line: changes.join(' · '), auto: 4800, tapToSkip: true }).then(() => { if (S.running) startRound(false); });
       }, 900);
     } else {
       roundT = setTimeout(() => startRound(false), 950);
@@ -259,10 +256,10 @@
     Sfx.play('life');
     clearTimeout(roundT);
     if (S.lives <= 0) {
-      toast(`<b>${R.enemy.name}</b> ברח. ונגמרו העלים.`, 'is-bad');
+      toast(`<b>${R.enemy.name}</b> ברח`, 'is-bad');
       roundT = setTimeout(end, 1300);
     } else {
-      toast(`<b>${R.enemy.name}</b> ברח! נשארו ${S.lives} חיים`, 'is-bad');
+      toast(`<b>${R.enemy.name}</b> ברח`, 'is-bad');
       roundT = setTimeout(() => startRound(false), 1300);
     }
   }

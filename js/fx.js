@@ -67,8 +67,8 @@
     el.textContent = text;
     return el;
   }
-  function stamp(x, y, text) {
-    const el = spawn('stampfx', x, y, {});
+  function stamp(x, y, text, small) {
+    const el = spawn('stampfx' + (small ? ' stampfx--sm' : ''), x, y, {});
     el.textContent = text;
     return el;
   }
@@ -89,7 +89,6 @@
         ${o.line ? `<p class="inter__line">${o.line}</p>` : ''}
         ${o.button ? `<button type="button" class="inter__btn">${o.button}</button>` : ''}
         ${o.auto ? `<div class="inter__bar"><i></i></div>` : ''}
-        ${tap && !o.button ? `<small class="inter__skip">לחצו כדי להמשיך</small>` : ''}
       </div>`;
       o.host.appendChild(el);
       interEl = el;

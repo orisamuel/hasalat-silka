@@ -15,7 +15,7 @@
   const lerp = (a, b, t) => a + (b - a) * t, clamp = (v, a, b) => Math.max(a, Math.min(b, v));
   const FW = 104, FH = 200, GROUND = 64;
 
-  const BREAK_LINES = ['הסלק עדיין טרי. אתם?', 'הפסקת סלט. תנשמו.', 'העלים לא הולכים לשום מקום. גם האויבים לא.', 'יופי של ידיים. עוד גל?', 'האויבים ביקשו הפסקה. לא קיבלו. אתם כן.', 'טרי, נקי, וממתין לגל הבא.'];
+  const BREAK_LINES = ['הסלק עדיין טרי. אתם?', 'הפסקת סלט.', 'העלים לא הולכים לשום מקום.', 'יופי של ידיים.', 'האויבים ביקשו הפסקה. לא קיבלו.', 'טרי, נקי, ומחכה לגל הבא.'];
   const LEAF = `<svg viewBox="0 0 34 46" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <path d="M17 44 L17 26" stroke="#d81b60" stroke-width="3.5" stroke-linecap="round"/>
     <path d="M17 2 C31 8 34 24 17 31 C0 24 3 8 17 2 Z" fill="#2f7d32" stroke="#245f27" stroke-width="1"/>
@@ -100,11 +100,10 @@
     breakT = setTimeout(() => {
       if (!S.running) return;
       Sfx.play('levelup');
-      const sub = S.waveHits === enemies ? 'גל נקי! אף אחד לא נחת. ' : '';
-      const nextLine = `בגל הבא: ${next.count - next.decoys} צונחים` + (next.decoys ? `, ${next.decoys} ${next.decoys === 1 ? 'שקית חסלט לתפוס' : 'שקיות חסלט לתפוס'}` : '') + (w >= 2 ? ' · מהר יותר' : '');
-      Fx.interstitial({ host: sky, kicker: `גל ${w} הושלם ✅`, title: `${S.waveHits}/${enemies} חוסלו`,
-        sub: sub + BREAK_LINES[Math.floor(Math.random() * BREAK_LINES.length)] + (S.waveCaught ? ` תפסתם ${S.waveCaught} ${S.waveCaught === 1 ? 'שקית' : 'שקיות'}.` : ''),
-        line: nextLine, button: `לגל ${w + 1} ▶`, auto: AUTO_NEXT, tapToSkip: true }).then(() => {
+      const sub = (S.waveHits === enemies ? 'גל נקי. ' : '') + BREAK_LINES[Math.floor(Math.random() * BREAK_LINES.length)];
+      const nextLine = `בגל הבא: ${next.count - next.decoys} צונחים` + (next.decoys ? `, ${next.decoys === 1 ? 'שקית' : next.decoys + ' שקיות'} לתפוס` : '');
+      Fx.interstitial({ host: sky, kicker: `גל ${w}`, title: `${S.waveHits}/${enemies} סולקו`,
+        sub, line: nextLine, button: `לגל ${w + 1} ▶`, auto: AUTO_NEXT, tapToSkip: true }).then(() => {
           if (!S.running) return;
           startWave(w + 1);
           lastT = performance.now();
@@ -242,12 +241,10 @@
     Sfx.play(e.bonus ? 'bonus' : 'whack');
     if (S.combo % 3 === 0) Sfx.play('combo');
     Fx.burstLeaves(cx, cy, e.bonus ? 16 : 10);
-    Fx.floatText(cx, cy - 34, '+' + pts, e.bonus ? 'is-bonus' : 'is-good');
-    let msg = Math.random() < .4 ? `<b>${e.name}</b>: ${e.quip}` : `<b>${e.name}</b> חוסל באוויר!`;
-    if (e.bonus) msg = `⭐ בונוס! <b>${e.name}</b> חוסל!`;
-    else if (fast) msg += ' ⚡ מהיר!';
-    if (S.combo >= 3 && S.combo % 3 === 0) msg += ` · קומבו ×${mult}`;
-    toast(msg, e.bonus ? 'is-bonus' : '');
+    Fx.floatText(cx, cy - 34, (fast ? '⚡ ' : '') + '+' + pts, e.bonus ? 'is-bonus' : 'is-good');
+    Fx.stamp(cx, cy - 72, 'סוּלַק!', true);
+    if (e.bonus) toast(`⭐ <b>${e.name}</b> סולק!`, 'is-bonus');
+    else if (Math.random() < .3) toast(`<b>${e.name}</b>: ${e.quip}`);
     updateHud(true);
     resolved();
   }
@@ -261,7 +258,7 @@
     removeSoon(f, 700);
     Sfx.play('bad');
     Fx.floatText(cx, cy - 24, '−150', 'is-bad');
-    toast('אוי! יריתם על שקית <b>חסלט</b> 😱 את זה תופסים, לא מחסלים', 'is-bad');
+    toast('אוי! זה <b>חסלט</b> 😱 תופסים, לא יורים', 'is-bad');
     updateHud(true);
     resolved();
   }
@@ -278,12 +275,12 @@
         f.el.classList.add('is-caught');
         Sfx.play('bonus');
         Fx.burstLeaves(cx, cy + 20, 8);
-        Fx.floatText(cx, cy - 30, '+100 תפיסה!', 'is-bonus');
-        toast('תפסתם שקית <b>חסלט</b>! טרייה, נקייה, +100 🥬', 'is-bonus');
+        Fx.floatText(cx, cy - 30, '+100', 'is-bonus');
+        toast('תפסתם שקית <b>חסלט</b> 🥬', 'is-bonus');
         updateHud(true);
       } else {
         f.el.classList.add('is-landed');
-        Fx.floatText(cx, cy - 30, 'שקית נפלה', 'is-muted');
+        Fx.floatText(cx, cy - 30, 'נפלה', 'is-muted');
       }
       removeSoon(f, 600);
       resolved();
@@ -293,8 +290,8 @@
     f.el.classList.add('is-landed');
     removeSoon(f, 600);
     Sfx.play('life');
-    Fx.floatText(cx, cy - 30, 'נחת!', 'is-bad');
-    toast(`<b>${f.enemy.name}</b> נחת! ${S.lives > 0 ? `נשארו ${S.lives} חיים` : 'ונגמרו העלים.'}`, 'is-bad');
+    Fx.floatText(cx, cy - 30, 'נחת', 'is-bad');
+    toast(`<b>${f.enemy.name}</b> נחת`, 'is-bad');
     updateHud();
     if (S.lives <= 0) return end();
     resolved();

@@ -5,10 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>חסלט מחסלת 🥬 · המשחק</title>
 
-  <meta name="description" content="יד אחת, צרור עלי סלק של חסלט, ואפס סובלנות לאויבינו ומבקשי רעתנו. משחק חיסולים טרי, ירוק ונקי מחרקים." />
+  <meta name="description" content="בואו לסלק את אויבינו ומבקשי רעתנו – עם עלי סלק של חסלט. משחק טרי, ירוק ונקי מחרקים." />
 
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="חסלט מחסלת 🥬 בואו לחסל את אויבינו ומבקשי רעתנו – עם עלי סלק" />
+  <meta property="og:title" content="חסלט מחסלת 🥬 בואו לסלק את אויבינו ומבקשי רעתנו – עם עלי סלק" />
   <meta property="og:description" content="נסראללה צץ מהאדמה? עלה. חמינאי? עלה. כוסברה? לא, זה לא מחסל. משחק חיסולים טרי ונקי מחרקים, בחסות חסלט." />
   <meta property="og:image" content="https://orisamuel.github.io/hasalat-silka/assets/og-share.jpg?v=1" />
   <meta property="og:image:width" content="1200" />
@@ -17,7 +17,7 @@
   <meta property="og:locale" content="he_IL" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="חסלט מחסלת 🥬 המשחק" />
-  <meta name="twitter:description" content="יד אחת, צרור עלי סלק, ואפס סובלנות לאויבינו ומבקשי רעתנו." />
+  <meta name="twitter:description" content="בואו לסלק את אויבינו ומבקשי רעתנו – עם עלי סלק של חסלט." />
   <meta name="twitter:image" content="https://orisamuel.github.io/hasalat-silka/assets/og-share.jpg?v=1" />
   <meta name="theme-color" content="#6FB23C" />
 
@@ -39,7 +39,7 @@
         <div class="logo-card"><img src="assets/logo.jpg" alt="חסלט — הטעם הנקי של הטבע" /></div>
         <div class="hero__hand" id="heroHand" aria-hidden="true"></div>
         <h1 class="title">חסלט מְחַסֶּלֶת</h1>
-        <p class="tagline">יד אחת. צרור עלי סלק. אפס סובלנות לאויבינו ומבקשי רעתנו.</p>
+        <p class="tagline">בואו לסלק את אויבינו ומבקשי רעתנו. עם עלי סלק.</p>
       </header>
 
       <div class="modes">
@@ -47,7 +47,7 @@
           <span class="mode__icon" id="modeWhackIcon" aria-hidden="true"></span>
           <span class="mode__text">
             <b>מצב חיסול</b>
-            <span>הם צצים מהאדמה – אתם מנחיתים עליהם עלה. 60 שניות, כמה שיותר.</span>
+            <span>צצים מהאדמה, חוטפים עלה. 60 שניות.</span>
             <em id="bestWhack">שיא: —</em>
           </span>
         </button>
@@ -55,7 +55,7 @@
           <span class="mode__icon mode__icon--shelf" id="modeShelfIcon" aria-hidden="true"></span>
           <span class="mode__text">
             <b>מצב מדף</b>
-            <span>האויב מרחף. במדף שלכם יש מוצרים של חסלט. רק <u>עלי הסלק</u> מחסלים. כוסברה, למען השם, לא נחשבת.</span>
+            <span>האויב מרחף, המדף שלכם. רק <u>עלי הסלק</u> מסלקים. כוסברה לא נחשבת.</span>
             <em id="bestShelf">שיא: —</em>
           </span>
         </button>
@@ -63,19 +63,19 @@
           <span class="mode__icon mode__icon--shoot" id="modeShootIcon" aria-hidden="true"></span>
           <span class="mode__text">
             <b>מצב ירי</b>
-            <span>הם צונחים מלמעלה. אתם למטה עם צרור עלי סלק. לחיצה על אויב = עלה בפרצוף. שקית חסלט שצונחת? תופסים, לא יורים.</span>
+            <span>צונחים מלמעלה, אתם למטה עם הצרור. לחיצה = עלה בפרצוף.</span>
             <em id="bestShoot">שיא: —</em>
           </span>
         </button>
       </div>
 
       <div class="menu__row">
-        <button class="chip" id="albumBtn">📒 אלבום המחוסלים</button>
+        <button class="chip" id="albumBtn">📒 אלבום המסולקים</button>
         <button class="chip" id="aboutBtn">מה זה בעצם</button>
         <button class="chip chip--icon" id="soundBtn" aria-label="צליל">🔊</button>
       </div>
 
-      <p class="sponsor">בחסות <b>חסלט</b> · ירק נקי, בלי חרקים · הטעם הנקי של הטבע</p>
+      <p class="sponsor">בחסות <b>חסלט</b> · הטעם הנקי של הטבע</p>
     </section>
 
     <!-- ===================== WHACK MODE ===================== -->
@@ -95,7 +95,6 @@
       </div>
 
       <div class="game__foot">
-        <span class="hint">🥬 עלה על האויב · ברח: −25 · שקית חסלט: −150</span>
         <button class="quit" id="wQuit">✕ יציאה</button>
       </div>
     </section>
@@ -118,20 +117,19 @@
         <div class="bubble" id="sBubble" hidden></div>
         <div class="combo-badge" id="sComboBadge" hidden></div>
         <div class="toast toast--arena" id="sToast" hidden></div>
-        <p class="arena__hint" id="sHint">מהר! תפסו מהמדף את <b>עלי הסלק</b> של חסלט</p>
+        <p class="arena__hint" id="sHint">רק <b>עלי הסלק</b> מסלקים</p>
       </div>
 
       <section class="panel" aria-label="המדף שלך">
         <div class="panel__head">
           <span class="panel__title">🛒 המדף שלך</span>
-          <span class="panel__sub" id="sFootHint">שלב 1: כוסברה, פטרוזיליה או עלי סלק? רק אחד מהם מחסל.</span>
+          <span class="panel__sub" id="sFootHint">כוסברה, פטרוזיליה או עלי סלק?</span>
         </div>
         <div class="shelf" id="shelf"></div>
       </section>
       </div>
 
       <div class="game__foot">
-        <span class="hint">לחיצה על המוצר הלא-נכון = האויב צוחק ואתם מפסידים זמן</span>
         <button class="quit" id="sQuit">✕ יציאה</button>
       </div>
     </section>
@@ -149,11 +147,10 @@
         <div class="gun" id="gun" aria-hidden="true"></div>
         <div class="toast" id="gToast" hidden></div>
         <div class="combo-badge combo-badge--sky" id="gComboBadge" hidden></div>
-        <p class="sky__hint" id="gHint">לחצו על אויב שצונח – העלה עף אליו מהצרור 🥬</p>
+        <p class="sky__hint" id="gHint">לחצו על אויב</p>
       </div>
 
       <div class="game__foot">
-        <span class="hint">אויב שנוחת = חיים אחד פחות · שקית חסלט תופסים עם היד למטה</span>
         <button class="quit" id="gQuit">✕ יציאה</button>
       </div>
     </section>
@@ -185,7 +182,7 @@
     <div class="overlay" id="album">
       <div class="card album-card">
         <button class="card__close" id="albumClose" aria-label="סגירה">✕</button>
-        <h2 class="card__title">📒 אלבום המחוסלים</h2>
+        <h2 class="card__title">📒 אלבום המסולקים</h2>
         <p class="card__sub" id="albumTotal"></p>
         <div class="album__grid" id="albumGrid"></div>
         <p class="album__note">כל הדמויות הן קריקטורות מקוריות. כל דמיון לעלי סלק הוא מכוון.</p>

@@ -45,28 +45,28 @@
         (isBest ? ' · שיא חדש! 🎉' : (prevBest ? ` · השיא שלכם: ${fmt(prevBest)}` : ''));
 
       const stats = r.mode === 'whack'
-        ? [[r.hits, 'חיסולים'], [r.accuracy + '%', 'דיוק'], ['×' + Math.min(5, 1 + Math.floor(r.bestCombo / 3)), 'קומבו מקסימלי']]
+        ? [[r.hits, 'סולקו'], [r.accuracy + '%', 'דיוק'], ['×' + Math.min(5, 1 + Math.floor(r.bestCombo / 3)), 'קומבו']]
         : r.mode === 'shoot'
-          ? [[r.hits, 'חיסולים'], [r.wave, 'גל'], [r.accuracy + '%', 'דיוק']]
-          : [[r.hits, 'סולקו'], [r.level, 'שלב'], [r.wrong, 'טעויות במדף']];
+          ? [[r.hits, 'סולקו'], [r.wave, 'גל'], [r.accuracy + '%', 'דיוק']]
+          : [[r.hits, 'סולקו'], [r.level, 'שלב'], [r.wrong, 'טעויות']];
       $('#resultStats').innerHTML = stats.map(s => `<div class="stat"><b>${s[0]}</b><span>${s[1]}</span></div>`).join('');
 
       let fav = null;
       for (const id in r.kills) if (!fav || r.kills[id] > r.kills[fav]) fav = id;
       const lines = [];
-      if (fav) { const e = Chars.ENEMIES.find(x => x.id === fav); lines.push(`המחוסל המועדף עליכם: <b>${e.name}</b> (${r.kills[fav]}×)`); }
+      if (fav) { const e = Chars.ENEMIES.find(x => x.id === fav); lines.push(`הכי סולק: <b>${e.name}</b> (${r.kills[fav]}×)`); }
       if (r.mode === 'shelf' && r.worst) lines.push(`לחצתם על <b>${r.worst.name}</b> ${r.worst.n} פעמים. אנחנו לא שופטים. (כן, כן שופטים.)`);
       if (r.mode === 'whack' && r.decoyHits) lines.push(`ופגעתם ב-<b>${r.decoyHits}</b> שקיות חסלט. על זה דווקא נשפוט.`);
-      if (r.mode === 'shoot' && r.caught) lines.push(`תפסתם <b>${r.caught}</b> שקיות חסלט באוויר. יופי של ידיים.`);
-      if (r.mode === 'shoot' && r.decoyHits) lines.push(`ויריתם על <b>${r.decoyHits}</b> שקיות חסלט. את זה תופסים, לא מחסלים.`);
-      if (!lines.length) lines.push(r.mode === 'shelf' ? 'אפילו אחד לא סולק. הכוסברה ניצחה.' : 'אפס חיסולים. האויבים שולחים תודה.');
+      if (r.mode === 'shoot' && r.caught) lines.push(`תפסתם <b>${r.caught}</b> שקיות. יופי של ידיים.`);
+      if (r.mode === 'shoot' && r.decoyHits) lines.push(`ויריתם על <b>${r.decoyHits}</b> שקיות חסלט. על זה נשפוט.`);
+      if (!lines.length) lines.push(r.mode === 'shelf' ? 'אפילו אחד לא סולק. הכוסברה ניצחה.' : 'אפס סילוקים. האויבים שולחים תודה.');
       $('#resultFav').innerHTML = lines.join('<br>');
 
       const url = cleanUrl();
       state.shareText = r.mode === 'whack'
-        ? `חיסלתי ${r.hits} אויבים עם עלי סלק של חסלט וצברתי ${fmt(r.score)} נקודות 🥬💥\nדרגה: ${rk[2]}. נראה אותך:\n${url}`
+        ? `סילקתי ${r.hits} אויבים עם עלי סלק של חסלט 🥬💥 ${fmt(r.score)} נקודות, דרגה: ${rk[2]}.\nנראה אותך:\n${url}`
         : r.mode === 'shoot'
-        ? `הגעתי לגל ${r.wave} וחיסלתי ${r.hits} אויבים צונחים עם עלי סלק של חסלט 🥬🎯 (${fmt(r.score)} נקודות)\nנראה אותך:\n${url}`
+        ? `הגעתי לגל ${r.wave} וסילקתי ${r.hits} אויבים צונחים עם עלי סלק של חסלט 🥬🎯 ${fmt(r.score)} נקודות.\nנראה אותך:\n${url}`
         : `הגעתי לשלב ${r.level} במדף של חסלט וסילקתי ${r.hits} אויבים 🥬💨` +
           (r.worst ? `\n(ולחצתי על ${r.worst.name} ${r.worst.n} פעמים. לא שאלתם.)` : '') +
           `\nנראה אותך:\n${url}`;
@@ -119,8 +119,8 @@
         <span class="album__count">${n ? n + '×' : '?'}</span><b>${e.name}</b><span>${e.org}</span></div>`;
     }).join('');
     $('#albumTotal').textContent = total
-      ? `${fmt(total)} חיסולים בסך הכל · ${unlocked}/${Chars.ENEMIES.length} דמויות באלבום`
-      : 'עדיין לא חיסלתם אף אחד. העלים מחכים.';
+      ? `${fmt(total)} סילוקים · ${unlocked}/${Chars.ENEMIES.length} דמויות`
+      : 'עדיין לא סילקתם אף אחד. העלים מחכים.';
   }
 
   /* ---- שיתוף ---- */

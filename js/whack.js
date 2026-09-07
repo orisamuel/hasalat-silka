@@ -9,8 +9,8 @@
   const field = $('#field'), fieldWrap = field.parentElement;
   const WAVES = [20000, 40000];
   const WAVE_TEXT = [
-    { kicker: 'גל 2 מתוך 3', title: 'מהר יותר', sub: 'הם צצים מהר יותר, ולפעמים שניים ביחד. 40 שניות נשארו.' },
-    { kicker: 'גל 3 מתוך 3', title: 'הגל האחרון', sub: 'שלושה בו-זמנית. 20 שניות. תנו בראש.' }
+    { kicker: 'גל 2 מתוך 3', title: 'מהר יותר', sub: 'שניים ביחד. 40 שניות.' },
+    { kicker: 'גל 3 מתוך 3', title: 'הגל האחרון', sub: 'שלושה בו-זמנית. 20 שניות.' }
   ];
   const els = { score: $('#wScore'), bar: $('#wBar'), time: $('#wTime'), combo: $('#wCombo'), toast: $('#wToast') };
   const timerBox = els.bar.closest('.hud__timer');
@@ -101,7 +101,7 @@
     clearTimeout(restT);
     Fx.Hand.hide();
     Sfx.play('levelup');
-    Fx.interstitial({ host: fieldWrap, kicker: t.kicker, title: t.title, sub: t.sub, auto: 1500, tapToSkip: true }).then(() => {
+    Fx.interstitial({ host: fieldWrap, kicker: t.kicker, title: t.title, sub: t.sub, auto: 3000, tapToSkip: true }).then(() => {
       if (!S.running) return;
       if (coarse) restHand(false);
       const resumeAt = performance.now();
@@ -146,7 +146,7 @@
     S.escapes++;
     S.combo = 0;
     S.score = Math.max(0, S.score - 25);
-    Fx.floatText(c.x, c.y - 24, 'ברח! −25', 'is-bad');
+    Fx.floatText(c.x, c.y - 24, '−25', 'is-bad');
     updateHud();
     goDown(h);
   }
@@ -181,7 +181,7 @@
     h.sprite.classList.add('hit');
     Sfx.play('bad');
     Fx.floatText(x, y - 14, '−150', 'is-bad');
-    toast('אוי! זה <b>חסלט</b>! את זה לא מחסלים 😱', 'is-bad');
+    toast('אוי! זה <b>חסלט</b> 😱', 'is-bad');
     clearTimeout(h.t);
     h.t = setTimeout(() => goDown(h), 450);
     updateHud(true);
@@ -207,14 +207,10 @@
     Sfx.play(e.bonus ? 'bonus' : 'whack');
     if (S.combo % 3 === 0) Sfx.play('combo');
     Fx.burstLeaves(x, y, e.bonus ? 16 : 10);
-    Fx.floatText(x, y - 18, '+' + pts, e.bonus ? 'is-bonus' : 'is-good');
-
-    const useQuip = Math.random() < .4;
-    let msg = useQuip ? `<b>${e.name}</b>: ${e.quip}` : `<b>${e.name}</b> חוסל!`;
-    if (e.bonus) msg = `⭐ בונוס! <b>${e.name}</b> חוסל!`;
-    else if (fast && !useQuip) msg += ' ⚡ מהיר!';
-    if (S.combo >= 3 && S.combo % 3 === 0) msg += ` · קומבו ×${mult}`;
-    toast(msg, e.bonus ? 'is-bonus' : '');
+    Fx.floatText(x, y - 18, (fast ? '⚡ ' : '') + '+' + pts, e.bonus ? 'is-bonus' : 'is-good');
+    Fx.stamp(x, y - 54, 'סוּלַק!', true);
+    if (e.bonus) toast(`⭐ <b>${e.name}</b> סולק!`, 'is-bonus');
+    else if (Math.random() < .3) toast(`<b>${e.name}</b>: ${e.quip}`);
 
     clearTimeout(h.t);
     h.t = setTimeout(() => goDown(h), 480);
