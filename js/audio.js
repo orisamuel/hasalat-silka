@@ -64,6 +64,7 @@
     levelup() { [523, 659, 784, 1046].forEach((f, i) => tone(f, .15, 'triangle', .15, null, i * .09)); },
     over() { [392, 330, 262].forEach((f, i) => tone(f, .26, 'triangle', .15, null, i * .19)); },
     escape() { tone(420, .22, 'sine', .09, 980); },
+    shoot() { noise(.1, 3200, 500, .16); tone(720, .09, 'triangle', .07, 280); },
     life() { tone(330, .18, 'sawtooth', .08, 160); tone(220, .22, 'sawtooth', .08, 110, .16); }
   };
 

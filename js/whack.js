@@ -67,7 +67,7 @@
 
   function tick(now) {
     if (!S.running) return;
-    const elapsed = now - S.startAt, p = Math.min(1, elapsed / DUR), remaining = Math.max(0, DUR - elapsed);
+    const elapsed = Math.max(0, now - S.startAt), p = Math.min(1, elapsed / DUR), remaining = Math.max(0, DUR - elapsed);
     els.bar.style.width = (remaining / DUR * 100) + '%';
     els.time.textContent = Math.ceil(remaining / 1000);
     timerBox.classList.toggle('is-rush', remaining < 10000);

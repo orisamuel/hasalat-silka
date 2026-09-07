@@ -38,7 +38,7 @@
       const rk = rank(r.score);
 
       const stamp = $('#resultStamp');
-      stamp.textContent = r.mode === 'whack' ? '⏱️ הזמן נגמר!' : '🥬 נגמרו העלים!';
+      stamp.textContent = r.mode === 'whack' ? '⏱️ הזמן נגמר!' : r.mode === 'shoot' ? '🪂 נחתו יותר מדי!' : '🥬 נגמרו העלים!';
       stamp.classList.toggle('is-win', isBest);
       $('#resultTitle').textContent = `${fmt(r.score)} נקודות`;
       $('#resultSub').innerHTML = `${rk[1]} דרגה: <b>${rk[2]}</b>` +
@@ -46,7 +46,9 @@
 
       const stats = r.mode === 'whack'
         ? [[r.hits, 'חיסולים'], [r.accuracy + '%', 'דיוק'], ['×' + Math.min(5, 1 + Math.floor(r.bestCombo / 3)), 'קומבו מקסימלי']]
-        : [[r.hits, 'סולקו'], [r.level, 'שלב'], [r.wrong, 'טעויות במדף']];
+        : r.mode === 'shoot'
+          ? [[r.hits, 'חיסולים'], [r.wave, 'גל'], [r.accuracy + '%', 'דיוק']]
+          : [[r.hits, 'סולקו'], [r.level, 'שלב'], [r.wrong, 'טעויות במדף']];
       $('#resultStats').innerHTML = stats.map(s => `<div class="stat"><b>${s[0]}</b><span>${s[1]}</span></div>`).join('');
 
       let fav = null;
@@ -55,12 +57,16 @@
       if (fav) { const e = Chars.ENEMIES.find(x => x.id === fav); lines.push(`המחוסל המועדף עליכם: <b>${e.name}</b> (${r.kills[fav]}×)`); }
       if (r.mode === 'shelf' && r.worst) lines.push(`לחצתם על <b>${r.worst.name}</b> ${r.worst.n} פעמים. אנחנו לא שופטים. (כן, כן שופטים.)`);
       if (r.mode === 'whack' && r.decoyHits) lines.push(`ופגעתם ב-<b>${r.decoyHits}</b> שקיות חסלט. על זה דווקא נשפוט.`);
-      if (!lines.length) lines.push(r.mode === 'whack' ? 'אפס חיסולים. האויבים שולחים תודה.' : 'אפילו אחד לא סולק. הכוסברה ניצחה.');
+      if (r.mode === 'shoot' && r.caught) lines.push(`תפסתם <b>${r.caught}</b> שקיות חסלט באוויר. יופי של ידיים.`);
+      if (r.mode === 'shoot' && r.decoyHits) lines.push(`ויריתם על <b>${r.decoyHits}</b> שקיות חסלט. את זה תופסים, לא מחסלים.`);
+      if (!lines.length) lines.push(r.mode === 'shelf' ? 'אפילו אחד לא סולק. הכוסברה ניצחה.' : 'אפס חיסולים. האויבים שולחים תודה.');
       $('#resultFav').innerHTML = lines.join('<br>');
 
       const url = cleanUrl();
       state.shareText = r.mode === 'whack'
         ? `חיסלתי ${r.hits} אויבים עם עלי סלק של חסלט וצברתי ${fmt(r.score)} נקודות 🥬💥\nדרגה: ${rk[2]}. נראה אותך:\n${url}`
+        : r.mode === 'shoot'
+        ? `הגעתי לגל ${r.wave} וחיסלתי ${r.hits} אויבים צונחים עם עלי סלק של חסלט 🥬🎯 (${fmt(r.score)} נקודות)\nנראה אותך:\n${url}`
         : `הגעתי לשלב ${r.level} במדף של חסלט וסילקתי ${r.hits} אויבים 🥬💨` +
           (r.worst ? `\n(ולחצתי על ${r.worst.name} ${r.worst.n} פעמים. לא שאלתם.)` : '') +
           `\nנראה אותך:\n${url}`;
@@ -74,6 +80,7 @@
   /* ---- אייקונים בתפריט ---- */
   $('#modeWhackIcon').innerHTML = Chars.enemySvg(Chars.ENEMIES[0]);
   $('#modeShelfIcon').innerHTML = Products.renderProduct(Products.PRODUCTS[0], { label: true });
+  $('#modeShootIcon').innerHTML = Shoot.iconSvg();
   $('#heroHand').innerHTML = Chars.renderHand({ id: 'hero' });
 
   /* ---- ניווט ---- */
@@ -82,17 +89,19 @@
     closeAll();
     App.showScreen(mode);
     Sfx.unlock();
-    if (mode === 'whack') Whack.start(); else Shelf.start();
+    if (mode === 'whack') Whack.start(); else if (mode === 'shelf') Shelf.start(); else Shoot.start();
   }
   function quit() {
     if (state.mode === 'whack') Whack.stop();
     if (state.mode === 'shelf') Shelf.stop();
+    if (state.mode === 'shoot') Shoot.stop();
     App.showScreen('menu');
     refreshBest();
   }
   function refreshBest() {
     $('#bestWhack').textContent = state.best.whack ? `שיא: ${fmt(state.best.whack)}` : 'שיא: —';
     $('#bestShelf').textContent = state.best.shelf ? `שיא: ${fmt(state.best.shelf)}` : 'שיא: —';
+    $('#bestShoot').textContent = state.best.shoot ? `שיא: ${fmt(state.best.shoot)}` : 'שיא: —';
   }
 
   /* ---- שכבות ---- */
@@ -144,6 +153,8 @@
   /* ---- חיווט ---- */
   $('#modeWhack').addEventListener('click', () => startMode('whack'));
   $('#modeShelf').addEventListener('click', () => startMode('shelf'));
+  $('#modeShoot').addEventListener('click', () => startMode('shoot'));
+  $('#gQuit').addEventListener('click', quit);
   $('#wQuit').addEventListener('click', quit);
   $('#sQuit').addEventListener('click', quit);
   $('#albumBtn').addEventListener('click', () => { renderAlbum(); openOverlay('album'); });

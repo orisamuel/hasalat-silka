@@ -59,6 +59,14 @@
             <em id="bestShelf">שיא: —</em>
           </span>
         </button>
+        <button class="mode" data-mode="shoot" id="modeShoot">
+          <span class="mode__icon mode__icon--shoot" id="modeShootIcon" aria-hidden="true"></span>
+          <span class="mode__text">
+            <b>מצב ירי</b>
+            <span>הם צונחים מלמעלה. אתם למטה עם צרור עלי סלק. לחיצה על אויב = עלה בפרצוף. שקית חסלט שצונחת? תופסים, לא יורים.</span>
+            <em id="bestShoot">שיא: —</em>
+          </span>
+        </button>
       </div>
 
       <div class="menu__row">
@@ -122,6 +130,27 @@
       <div class="game__foot">
         <span class="hint">לחיצה על המוצר הלא-נכון = האויב צוחק ואתם מפסידים זמן</span>
         <button class="quit" id="sQuit">✕ יציאה</button>
+      </div>
+    </section>
+
+    <!-- ===================== SHOOT MODE ===================== -->
+    <section class="screen screen--game" id="screen-shoot">
+      <div class="hud">
+        <div class="hud__stat"><span>ניקוד</span><b id="gScore">0</b></div>
+        <div class="hud__stat"><span>גל</span><b id="gWave">1</b></div>
+        <div class="hud__stat"><span>חיים</span><b id="gLives" class="lives">🥬🥬🥬</b></div>
+      </div>
+
+      <div class="sky" id="sky" aria-label="שמי החיסולים">
+        <div class="sky__ground" id="skyGround"></div>
+        <div class="gun" id="gun" aria-hidden="true"></div>
+        <div class="toast" id="gToast" hidden></div>
+        <p class="sky__hint" id="gHint">לחצו על אויב שצונח – העלה עף אליו מהצרור 🥬</p>
+      </div>
+
+      <div class="game__foot">
+        <span class="hint">אויב שנוחת = חיים אחד פחות · שקית חסלט תופסים עם היד למטה</span>
+        <button class="quit" id="gQuit">✕ יציאה</button>
       </div>
     </section>
 
@@ -201,6 +230,7 @@
   <script src="js/fx.js?v=1"></script>
   <script src="js/whack.js?v=1"></script>
   <script src="js/shelf.js?v=1"></script>
+  <script src="js/shoot.js?v=1"></script>
   <script src="js/main.js?v=1"></script>
 </body>
 </html>

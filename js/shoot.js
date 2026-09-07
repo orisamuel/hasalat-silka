@@ -1,0 +1,291 @@
+/* =========================================================
+   חסלט מחסלת · מצב ירי
+   האויבים צונחים במצנחים מלמעלה. אתם למטה עם צרור עלי הסלק (גלוי כל הזמן).
+   לחיצה על אויב משגרת עלה מהצרור. אויב שנוחת = חיים אחד פחות.
+   שקית חסלט שצונחת: לא יורים – תופסים אותה עם היד למטה לבונוס.
+   ========================================================= */
+(function () {
+  'use strict';
+
+  const $ = s => document.querySelector(s);
+  const sky = $('#sky'), gun = $('#gun'), ground = $('#skyGround'), toastEl = $('#gToast'), hint = $('#gHint');
+  const els = { score: $('#gScore'), wave: $('#gWave'), lives: $('#gLives') };
+  const LIVES = 3, RAMP = 100000, WAVE_MS = 20000;
+  const lerp = (a, b, t) => a + (b - a) * t, clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const FW = 104, FH = 200, GROUND = 64;
+
+  const WAVE_LINES = ['', '', 'הם צונחים מהר יותר.', 'שניים-שלושה ביחד. תתרכזו.', 'הידיים לא מספיקות? העלים מספיקים.', 'עכשיו זה רציני.', 'השמיים מלאים. הסלק לא נגמר.'];
+  const LEAF = `<svg viewBox="0 0 34 46" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M17 44 L17 26" stroke="#d81b60" stroke-width="3.5" stroke-linecap="round"/>
+    <path d="M17 2 C31 8 34 24 17 31 C0 24 3 8 17 2 Z" fill="#2f7d32" stroke="#245f27" stroke-width="1"/>
+    <path d="M17 4 L17 29" stroke="#d81b60" stroke-width="2"/>
+    <path d="M17 12 L10 18 M17 10 L24 17 M17 20 L11 25" stroke="#e57aa0" stroke-width="1.4" stroke-linecap="round"/></svg>`;
+  const CANOPIES = ['#e53935', '#1e88e5', '#fb8c00', '#8e24aa', '#00897b'];
+  function chute(color) {
+    return `<svg viewBox="0 0 120 92" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M4 52 C4 10 116 10 116 52 Q60 40 4 52 Z" fill="${color}"/>
+      <path d="M30 47 C32 18 46 12 60 12 C74 12 88 18 90 47" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="7"/>
+      <path d="M8 52 L58 90 M112 52 L62 90 M40 46 L60 90 M80 46 L60 90" stroke="#5d4037" stroke-width="1.8"/></svg>`;
+  }
+
+  gun.innerHTML = Chars.renderHand({ id: 'gun' });
+  ground.innerHTML = `<div class="sky__lettuce">${[31, 32, 33, 34, 35].map(i => Products.renderHoleFront(i)).join('')}</div>`;
+
+  let S = null, raf = 0, toastT = 0, lastT = 0;
+
+  function reset() {
+    S = { score: 0, hits: 0, shots: 0, landed: 0, caught: 0, decoyHits: 0, combo: 0, bestCombo: 0, lives: LIVES, wave: 1, kills: {},
+      startAt: 0, nextSpawn: 0, running: false, aborted: false, lastEnemy: null, fallers: [], shots_: [], gunX: 0, gunTarget: 0 };
+  }
+  function clearSky() { sky.querySelectorAll('.faller, .shot').forEach(n => n.remove()); }
+
+  function start() {
+    reset();
+    clearSky();
+    S.running = true;
+    S.startAt = performance.now();
+    S.nextSpawn = S.startAt + 600;
+    S.gunX = S.gunTarget = sky.clientWidth / 2;
+    placeGun();
+    hint.hidden = false;
+    toastEl.hidden = true;
+    updateHud();
+    lastT = S.startAt;
+    cancelAnimationFrame(raf);
+    raf = requestAnimationFrame(tick);
+  }
+  function stop() {
+    if (S) { S.running = false; S.aborted = true; }
+    cancelAnimationFrame(raf);
+    clearSky();
+  }
+  function placeGun() { gun.style.transform = `translateX(${Math.round(S.gunX - gun.offsetWidth / 2)}px)`; }
+  function gunTop() { return sky.clientHeight - GROUND - gun.offsetHeight * .52; }
+
+  function tick(now) {
+    if (!S.running) return;
+    const dt = Math.min(50, now - lastT); lastT = now;
+    const elapsed = now - S.startAt, p = clamp(elapsed / RAMP, 0, 1);
+
+    const wave = 1 + Math.max(0, Math.floor(elapsed / WAVE_MS));
+    if (wave > S.wave) {
+      S.wave = wave;
+      Sfx.play('levelup');
+      toast(`🌊 גל ${wave}! ${WAVE_LINES[Math.min(wave, WAVE_LINES.length - 1)]}`, 'is-bonus');
+      updateHud();
+    }
+
+    S.gunX += (S.gunTarget - S.gunX) * Math.min(1, dt / 80);
+    placeGun();
+
+    if (now >= S.nextSpawn) {
+      const alive = S.fallers.filter(f => f.state === 'falling').length;
+      const maxUp = 2 + (p > .35 ? 1 : 0) + (p > .7 ? 1 : 0);
+      if (alive < maxUp) spawn(now, p);
+      S.nextSpawn = now + lerp(1500, 600, p) * (.75 + Math.random() * .5);
+    }
+
+    const landY = sky.clientHeight - GROUND - FH + 34;
+    for (const f of S.fallers) {
+      if (f.state !== 'falling') continue;
+      f.y += f.vy * dt / 1000;
+      f.x = f.x0 + Math.sin((now - f.born) / 900) * f.sway;
+      setPos(f);
+      if (f.y >= landY) land(f);
+    }
+    for (const s of S.shots_) {
+      if (s.done) continue;
+      const t = clamp((now - s.t0) / s.dur, 0, 1);
+      const x = lerp(s.x0, s.x1, t), y = lerp(s.y0, s.y1, t) - Math.sin(t * Math.PI) * 26;
+      s.el.style.transform = `translate(${Math.round(x - 17)}px, ${Math.round(y - 23)}px) rotate(${Math.round(lerp(s.r0, s.r1, t))}deg)`;
+      if (t >= 1) resolveShot(s);
+    }
+    S.shots_ = S.shots_.filter(s => !s.done);
+    S.fallers = S.fallers.filter(f => !f.removed);
+
+    raf = requestAnimationFrame(tick);
+  }
+
+  function spawn(now, p) {
+    const W = sky.clientWidth;
+    const decoy = p > .04 && Math.random() < .14;
+    const e = decoy ? null : Chars.pickEnemy(S.lastEnemy);
+    if (e) S.lastEnemy = e.id;
+    const el = document.createElement('div');
+    el.className = 'faller';
+    const color = decoy ? '#6FB23C' : CANOPIES[Math.floor(Math.random() * CANOPIES.length)];
+    el.innerHTML = `<div class="faller__chute">${chute(color)}</div><div class="fsprite">${decoy ? Products.renderDecoy() : Chars.enemySvg(e)}</div>`;
+    sky.appendChild(el);
+    const sway = 8 + Math.random() * 22;
+    const f = { el, enemy: e, decoy, x0: clamp(sway + 6 + Math.random() * (W - FW - sway * 2 - 12), 0, Math.max(0, W - FW)), x: 0, y: -FH + 60,
+      vy: lerp(72, 168, p) * (decoy ? 1.1 : 1) * (e && e.bonus ? 1.35 : 1), sway, born: now, state: 'falling', removed: false };
+    f.x = f.x0;
+    setPos(f);
+    S.fallers.push(f);
+    Sfx.play('pop');
+  }
+  function setPos(f) {
+    f.el.style.setProperty('--x', Math.round(f.x) + 'px');
+    f.el.style.setProperty('--y', Math.round(f.y) + 'px');
+  }
+  function removeSoon(f, ms) { setTimeout(() => { f.el.remove(); f.removed = true; }, ms); }
+
+  /* ---- ירי ---- */
+  function onDown(e) {
+    if (!S || !S.running) return;
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    Sfx.unlock();
+    const r = sky.getBoundingClientRect();
+    const tx = e.clientX - r.left, ty = e.clientY - r.top;
+    S.gunTarget = clamp(tx, 46, r.width - 46);
+    fire(tx, ty);
+  }
+  function fire(tx, ty) {
+    hint.hidden = true;
+    S.shots++;
+    gun.classList.remove('is-firing'); void gun.offsetWidth; gun.classList.add('is-firing');
+    Sfx.play('shoot');
+    const el = document.createElement('div');
+    el.className = 'shot';
+    el.innerHTML = LEAF;
+    sky.appendChild(el);
+    const x0 = S.gunX, y0 = gunTop();
+    const dist = Math.hypot(tx - x0, ty - y0);
+    const s = { el, x0, y0, x1: tx, y1: ty, t0: performance.now(), dur: 130 + dist * .32, r0: Math.random() * 40 - 20, r1: 360 * (Math.random() < .5 ? 1 : -1), done: false };
+    el.style.transform = `translate(${Math.round(x0 - 17)}px, ${Math.round(y0 - 23)}px)`;
+    S.shots_.push(s);
+  }
+  function resolveShot(s) {
+    s.done = true;
+    s.el.remove();
+    if (!S.running) return;
+    const r = sky.getBoundingClientRect();
+    const px = s.x1, py = s.y1;
+    let target = null, best = 1e9;
+    for (const f of S.fallers) {
+      if (f.state !== 'falling') continue;
+      const cx = f.x + FW / 2, cy = f.y + 128;
+      const d = Math.hypot(px - cx, (py - cy) * .8);
+      if (d < 70 && d < best) { best = d; target = f; }
+    }
+    const cx = r.left + px, cy = r.top + py;
+    if (!target) {
+      if (S.combo > 0) { S.combo = 0; updateHud(); }
+      Fx.floatText(cx, cy, 'פספוס', 'is-muted');
+      Sfx.play('miss');
+      return;
+    }
+    if (target.decoy) return hitDecoy(target, cx, cy);
+    hit(target, cx, cy);
+  }
+
+  function hit(f, cx, cy) {
+    const e = f.enemy;
+    f.state = 'hit';
+    S.hits++; S.combo++;
+    S.bestCombo = Math.max(S.bestCombo, S.combo);
+    const mult = Math.min(5, 1 + Math.floor(S.combo / 3));
+    const pts = (e.points + (S.wave - 1) * 10) * mult;
+    S.score += pts;
+    S.kills[e.id] = (S.kills[e.id] || 0) + 1;
+    App.stats.addKill(e.id);
+    f.el.querySelector('.fsprite').classList.add('hit');
+    f.el.classList.add('is-hit');
+    removeSoon(f, 700);
+    Sfx.play(e.bonus ? 'bonus' : 'whack');
+    if (S.combo % 3 === 0) Sfx.play('combo');
+    Fx.burstLeaves(cx, cy, e.bonus ? 16 : 10);
+    Fx.floatText(cx, cy - 34, '+' + pts, e.bonus ? 'is-bonus' : 'is-good');
+    let msg = Math.random() < .4 ? `<b>${e.name}</b>: ${e.quip}` : `<b>${e.name}</b> חוסל באוויר!`;
+    if (e.bonus) msg = `⭐ בונוס! <b>${e.name}</b> חוסל!`;
+    if (S.combo >= 3 && S.combo % 3 === 0) msg += ` · קומבו ×${mult}`;
+    toast(msg, e.bonus ? 'is-bonus' : '');
+    updateHud(true);
+  }
+  function hitDecoy(f, cx, cy) {
+    f.state = 'hit';
+    S.decoyHits++;
+    S.score = Math.max(0, S.score - 150);
+    S.combo = 0;
+    f.el.querySelector('.fsprite').classList.add('hit');
+    f.el.classList.add('is-hit');
+    removeSoon(f, 700);
+    Sfx.play('bad');
+    Fx.floatText(cx, cy - 24, '−150', 'is-bad');
+    toast('אוי! יריתם על שקית <b>חסלט</b> 😱 את זה תופסים, לא מחסלים', 'is-bad');
+    updateHud(true);
+  }
+
+  /* ---- נחיתה ---- */
+  function land(f) {
+    f.state = 'landed';
+    const r = sky.getBoundingClientRect();
+    const cx = r.left + f.x + FW / 2, cy = r.top + f.y + 110;
+    if (f.decoy) {
+      if (Math.abs((f.x + FW / 2) - S.gunX) < 66) {
+        S.caught++;
+        S.score += 100;
+        f.el.classList.add('is-caught');
+        Sfx.play('bonus');
+        Fx.burstLeaves(cx, cy + 20, 8);
+        Fx.floatText(cx, cy - 30, '+100 תפיסה!', 'is-bonus');
+        toast('תפסתם שקית <b>חסלט</b>! טרייה, נקייה, +100 🥬', 'is-bonus');
+        updateHud(true);
+      } else {
+        f.el.classList.add('is-landed');
+        Fx.floatText(cx, cy - 30, 'שקית נפלה', 'is-muted');
+      }
+      removeSoon(f, 600);
+      return;
+    }
+    S.landed++; S.lives--; S.combo = 0;
+    f.el.classList.add('is-landed');
+    removeSoon(f, 600);
+    Sfx.play('life');
+    Fx.floatText(cx, cy - 30, 'נחת!', 'is-bad');
+    toast(`<b>${f.enemy.name}</b> נחת! ${S.lives > 0 ? `נשארו ${S.lives} חיים` : 'ונגמרו העלים.'}`, 'is-bad');
+    updateHud();
+    if (S.lives <= 0) end();
+  }
+
+  function toast(html, cls) {
+    toastEl.innerHTML = html;
+    toastEl.className = 'toast ' + (cls || '');
+    toastEl.hidden = true; void toastEl.offsetWidth; toastEl.hidden = false;
+    clearTimeout(toastT);
+    toastT = setTimeout(() => { toastEl.hidden = true; }, 1700);
+  }
+  function updateHud(bump) {
+    els.score.textContent = S.score.toLocaleString('he-IL');
+    if (bump) { els.score.classList.remove('bump'); void els.score.offsetWidth; els.score.classList.add('bump'); }
+    els.wave.textContent = S.wave;
+    let lives = '';
+    for (let i = 0; i < LIVES; i++) lives += `<span class="${i < S.lives ? '' : 'lost'}">🥬</span>`;
+    els.lives.innerHTML = lives;
+  }
+  function end() {
+    S.running = false;
+    cancelAnimationFrame(raf);
+    Sfx.play('over');
+    const snap = S;
+    setTimeout(() => {
+      if (snap.aborted) return;
+      App.showResult({ mode: 'shoot', score: snap.score, hits: snap.hits, wave: snap.wave, accuracy: snap.shots ? Math.round(snap.hits / snap.shots * 100) : 0,
+        landed: snap.landed, caught: snap.caught, decoyHits: snap.decoyHits, bestCombo: snap.bestCombo, kills: snap.kills });
+    }, 900);
+  }
+
+  // אייקון לתפריט: אויב במצנח
+  function iconSvg() {
+    const e = Chars.ENEMIES.find(x => x.id === 'sinwar');
+    return `<div class="faller" style="position:relative;width:78%;height:auto;aspect-ratio:104/200;transform:none"><div class="faller__chute">${chute('#e53935')}</div><div class="fsprite">${Chars.enemySvg(e)}</div></div>`;
+  }
+
+  sky.addEventListener('pointerdown', onDown);
+  sky.addEventListener('pointermove', e => {
+    if (e.pointerType === 'mouse' && S && S.running) { const r = sky.getBoundingClientRect(); S.gunTarget = clamp(e.clientX - r.left, 46, r.width - 46); }
+  });
+  sky.addEventListener('contextmenu', e => e.preventDefault());
+
+  window.Shoot = { start, stop, iconSvg };
+})();

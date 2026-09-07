@@ -183,6 +183,7 @@
     Fx.poof(c.x, c.y, 14);
     Fx.burstLeaves(c.x, c.y, 8);
     Fx.stamp(c.x, c.y - 6, 'סוּלַק!');
+    arena.classList.remove('is-flash'); void arena.offsetWidth; arena.classList.add('is-flash');
     Fx.floatText(c.x, c.y + 46, '+' + pts, R.enemy.bonus ? 'is-bonus' : 'is-good');
     setTimeout(() => sprite.classList.add('gone'), 90);
     Sfx.play('poof');
@@ -254,7 +255,7 @@
     toastEl.className = 'toast toast--arena ' + (cls || '');
     toastEl.hidden = true; void toastEl.offsetWidth; toastEl.hidden = false;
     clearTimeout(toastT);
-    toastT = setTimeout(() => { toastEl.hidden = true; }, 1600);
+    toastT = setTimeout(() => { toastEl.hidden = true; }, 2100);
   }
 
   function updateHud(bump) {
