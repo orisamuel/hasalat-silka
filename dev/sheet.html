@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8" />
+<title>גיליון דמויות · חסלט מחסלת</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;700;900&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="../styles.css" />
+<style>
+  body{display:block; padding:16px; background:#eef7e6;}
+  h2{margin:18px 0 8px; font-size:18px;}
+  .grid{display:grid; grid-template-columns:repeat(6,1fr); gap:10px;}
+  .cell{background:#fff; border-radius:12px; padding:6px; text-align:center; font-size:12px; font-weight:700;}
+  .cell svg{width:100%; height:auto; display:block;}
+  .cell.dark{background:#c9dcb5;}
+  .sprite{position:static; transform:none !important; height:auto;}
+  .hand{position:static; opacity:1; width:150px; height:200px; display:inline-block;}
+</style>
+</head>
+<body>
+  <h2>אויבים – מצב רגיל</h2>
+  <div class="grid" id="normal"></div>
+  <h2>אויבים – מצב "חוסל"</h2>
+  <div class="grid" id="hit"></div>
+  <h2>מוצרים – עם תוויות</h2>
+  <div class="grid" id="prod"></div>
+  <h2>מוצרים – בלי תוויות</h2>
+  <div class="grid" id="prod2"></div>
+  <h2>יד · פתיון · חסה של הבור</h2>
+  <div class="grid" id="misc"></div>
+  <script src="../js/characters.js"></script>
+  <script src="../js/products.js"></script>
+  <script>
+    const $ = s => document.querySelector(s);
+    $('#normal').innerHTML = Chars.ENEMIES.map(e => `<div class="cell dark"><div class="sprite">${Chars.renderEnemy(e)}</div>${e.name}</div>`).join('');
+    $('#hit').innerHTML = Chars.ENEMIES.map(e => `<div class="cell dark"><div class="sprite hit">${Chars.renderEnemy(e)}</div>${e.name}</div>`).join('');
+    $('#prod').innerHTML = Products.PRODUCTS.map(p => `<div class="cell">${Products.renderProduct(p, { label: true })}${p.name}</div>`).join('');
+    $('#prod2').innerHTML = Products.PRODUCTS.map(p => `<div class="cell">${Products.renderProduct(p, { label: false })}${p.name}</div>`).join('');
+    $('#misc').innerHTML = `<div class="cell"><div class="hand">${Chars.renderHand({ id: 'x' })}</div>יד</div>
+      <div class="cell dark"><div class="sprite">${Products.renderDecoy()}</div>פתיון</div>
+      <div class="cell dark"><div class="sprite hit">${Products.renderDecoy()}</div>פתיון (נפגע)</div>
+      <div class="cell dark">${Products.renderHoleFront(1)}חסה</div>`;
+  </script>
+</body>
+</html>
