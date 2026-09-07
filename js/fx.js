@@ -15,14 +15,17 @@
 
   // נקודת המגע של היד = מרכז צרור העלים (50% מהרוחב, 24% מהגובה)
   function place(x, y) { handEl.style.transform = `translate(${Math.round(x - hw * .5)}px, ${Math.round(y - hh * .24)}px)`; }
+  function placeInstant(x, y) { handEl.classList.remove('is-gliding'); place(x, y); }
 
   let slapT = 0, hideT = 0;
   const Hand = {
     show() { handEl.classList.add('is-on'); },
     hide() { handEl.classList.remove('is-on'); },
-    moveTo: place,
+    moveTo: placeInstant,
+    // חזרה רכה למקום המנוחה (בנייד היד נשארת על המסך כל הזמן)
+    glideTo(x, y) { handEl.classList.add('is-gliding'); place(x, y); handEl.classList.add('is-on'); },
     slap(x, y) {
-      place(x, y);
+      placeInstant(x, y);
       handEl.classList.add('is-on');
       handEl.classList.remove('is-slapping');
       void handEl.offsetWidth; // מאפס את האנימציה

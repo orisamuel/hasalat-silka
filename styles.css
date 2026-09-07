@@ -208,6 +208,7 @@ svg .h{display:none;}
 /* =================== HAND + FX =================== */
 .hand{position:fixed; left:0; top:0; width:150px; height:200px; pointer-events:none; z-index:60; opacity:0; transition:opacity .15s ease; will-change:transform;}
 .hand.is-on{opacity:1;}
+.hand.is-gliding{transition:opacity .15s ease, transform .45s cubic-bezier(.2,.8,.3,1);}
 .hand svg{width:100%; height:100%; display:block; transform-origin:50% 72%; filter:drop-shadow(0 10px 10px rgba(20,40,10,.3));}
 .hand.is-slapping svg{animation:slap .2s ease-out;}
 @keyframes slap{0%{transform:rotate(-26deg) translate(14px,-18px);}45%{transform:rotate(8deg) translate(-4px,10px) scaleY(.9);}100%{transform:none;}}

@@ -22,7 +22,15 @@
     holes.push({ el, sprite: el.querySelector('.sprite'), label: el.querySelector('.hole__label'), state: 'empty', enemy: null, decoy: false, upAt: 0, downAt: 0, t: 0 });
   }
 
-  let S = null, raf = 0, toastT = 0;
+  let S = null, raf = 0, toastT = 0, restT = 0;
+  // מסך מגע: אין hover, אז היד עם עלי הסלק נשארת גלויה – נחה בתחתית השדה וחוזרת לשם אחרי כל מכה
+  const coarse = !!(window.matchMedia && matchMedia('(pointer:coarse)').matches);
+  function restHand(glide) {
+    const r = field.getBoundingClientRect();
+    const x = r.left + r.width / 2, y = r.bottom - 6;
+    if (glide) Fx.Hand.glideTo(x, y); else Fx.Hand.moveTo(x, y);
+    Fx.Hand.show();
+  }
 
   function reset() {
     S = { score: 0, hits: 0, misses: 0, escapes: 0, decoyHits: 0, combo: 0, bestCombo: 0, kills: {}, startAt: 0, nextSpawn: 0, running: false, lastEnemy: null };
@@ -37,6 +45,7 @@
     timerBox.classList.remove('is-rush');
     els.toast.hidden = true;
     updateHud();
+    if (coarse) restHand(false);
     cancelAnimationFrame(raf);
     raf = requestAnimationFrame(tick);
   }
@@ -44,6 +53,7 @@
   function stop() {
     if (S) S.running = false;
     cancelAnimationFrame(raf);
+    clearTimeout(restT);
     holes.forEach(h => clearHole(h));
     Fx.Hand.hide();
   }
@@ -116,7 +126,8 @@
     Sfx.unlock();
     const x = e.clientX, y = e.clientY;
     Fx.Hand.slap(x, y);
-    if (e.pointerType !== 'mouse') Fx.Hand.hideSoon(420);
+    if (coarse) { clearTimeout(restT); restT = setTimeout(() => { if (S && S.running) restHand(true); }, 650); }
+    else if (e.pointerType !== 'mouse') Fx.Hand.hideSoon(420);
 
     const holeEl = e.target.closest ? e.target.closest('.hole') : null;
     const h = holeEl ? holes[+holeEl.dataset.i] : null;
@@ -198,6 +209,7 @@
     S.running = false;
     cancelAnimationFrame(raf);
     holes.forEach(h => { if (h.state === 'up' || h.state === 'hit') goDown(h); });
+    clearTimeout(restT);
     Fx.Hand.hide();
     Sfx.play('over');
     const tries = S.hits + S.misses + S.decoyHits;
@@ -209,7 +221,7 @@
   field.addEventListener('pointermove', e => {
     if (e.pointerType === 'mouse' && S && S.running) { Fx.Hand.cancelHide(); Fx.Hand.moveTo(e.clientX, e.clientY); Fx.Hand.show(); }
   });
-  field.addEventListener('pointerleave', () => Fx.Hand.hide());
+  field.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') Fx.Hand.hide(); });
   field.addEventListener('contextmenu', e => e.preventDefault());
 
   window.Whack = { start, stop };
