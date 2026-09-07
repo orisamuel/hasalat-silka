@@ -254,6 +254,7 @@
     S.lives--; S.combo = 0;
     updateHud();
     Sfx.play('life');
+    { const c = Fx.centerOf(arena); Fx.floatText(c.x, c.y, 'ברח · −🥬', 'is-bad'); }
     clearTimeout(roundT);
     if (S.lives <= 0) {
       toast(`<b>${R.enemy.name}</b> ברח`, 'is-bad');

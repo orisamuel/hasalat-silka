@@ -38,14 +38,14 @@
       const rk = rank(r.score);
 
       const stamp = $('#resultStamp');
-      stamp.textContent = r.mode === 'whack' ? '⏱️ הזמן נגמר!' : r.mode === 'shoot' ? '🪂 נחתו יותר מדי!' : '🥬 נגמרו העלים!';
+      stamp.textContent = '🥬 נגמרו העלים!';
       stamp.classList.toggle('is-win', isBest);
       $('#resultTitle').textContent = `${fmt(r.score)} נקודות`;
       $('#resultSub').innerHTML = `${rk[1]} דרגה: <b>${rk[2]}</b>` +
         (isBest ? ' · שיא חדש! 🎉' : (prevBest ? ` · השיא שלכם: ${fmt(prevBest)}` : ''));
 
       const stats = r.mode === 'whack'
-        ? [[r.hits, 'סולקו'], [r.accuracy + '%', 'דיוק'], ['×' + Math.min(5, 1 + Math.floor(r.bestCombo / 3)), 'קומבו']]
+        ? [[r.hits, 'סולקו'], [r.wave, 'גל'], [r.accuracy + '%', 'דיוק']]
         : r.mode === 'shoot'
           ? [[r.hits, 'סולקו'], [r.wave, 'גל'], [r.accuracy + '%', 'דיוק']]
           : [[r.hits, 'סולקו'], [r.level, 'שלב'], [r.wrong, 'טעויות']];
@@ -57,6 +57,7 @@
       if (fav) { const e = Chars.ENEMIES.find(x => x.id === fav); lines.push(`הכי סולק: <b>${e.name}</b> (${r.kills[fav]}×)`); }
       if (r.mode === 'shelf' && r.worst) lines.push(`לחצתם על <b>${r.worst.name}</b> ${r.worst.n} פעמים. אנחנו לא שופטים. (כן, כן שופטים.)`);
       if (r.mode === 'whack' && r.decoyHits) lines.push(`ופגעתם ב-<b>${r.decoyHits}</b> שקיות חסלט. על זה דווקא נשפוט.`);
+      if (r.mode === 'whack' && r.escapes) lines.push(`<b>${r.escapes}</b> ברחו. הם לא יחזרו לספר.`);
       if (r.mode === 'shoot' && r.caught) lines.push(`תפסתם <b>${r.caught}</b> שקיות. יופי של ידיים.`);
       if (r.mode === 'shoot' && r.decoyHits) lines.push(`ויריתם על <b>${r.decoyHits}</b> שקיות חסלט. על זה נשפוט.`);
       if (!lines.length) lines.push(r.mode === 'shelf' ? 'אפילו אחד לא סולק. הכוסברה ניצחה.' : 'אפס סילוקים. האויבים שולחים תודה.');
@@ -64,7 +65,7 @@
 
       const url = cleanUrl();
       state.shareText = r.mode === 'whack'
-        ? `סילקתי ${r.hits} אויבים עם עלי סלק של חסלט 🥬💥 ${fmt(r.score)} נקודות, דרגה: ${rk[2]}.\nנראה אותך:\n${url}`
+        ? `הגעתי לגל ${r.wave} וסילקתי ${r.hits} אויבים עם עלי סלק של חסלט 🥬💥 ${fmt(r.score)} נקודות, דרגה: ${rk[2]}.\nנראה אותך:\n${url}`
         : r.mode === 'shoot'
         ? `הגעתי לגל ${r.wave} וסילקתי ${r.hits} אויבים צונחים עם עלי סלק של חסלט 🥬🎯 ${fmt(r.score)} נקודות.\nנראה אותך:\n${url}`
         : `הגעתי לשלב ${r.level} במדף של חסלט וסילקתי ${r.hits} אויבים 🥬💨` +

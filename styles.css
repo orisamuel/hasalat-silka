@@ -92,11 +92,13 @@ button{font-family:inherit; color:inherit;}
 .hud__timer{flex:1.4; background:var(--paper); border-radius:14px; padding:8px 12px; box-shadow:var(--shadow-sm);
   display:flex; align-items:center; gap:10px;}
 .hud__timer b{font-size:22px; font-weight:900; font-variant-numeric:tabular-nums; min-width:34px; text-align:center;}
+.hud__wave{font-weight:800; font-size:13px; white-space:nowrap; color:var(--ink-soft);}
+.hud__wave b{font-size:20px; min-width:0; color:var(--ink);}
 .hud__timer.is-rush b{color:var(--danger); animation:blink 0.6s steps(2) infinite;}
 @keyframes blink{50%{opacity:.45;}}
 .bar{flex:1; height:12px; background:#e6efdc; border-radius:999px; overflow:hidden;}
 .bar i{display:block; height:100%; width:100%; background:linear-gradient(90deg,var(--green-l),var(--green-d)); border-radius:999px;
-  transition:width .2s linear, background .3s;}
+  transition:width .12s linear, background .3s;}
 .is-rush .bar i{background:linear-gradient(90deg,#f0906c,var(--danger));}
 .lives{letter-spacing:1px;}
 .lives .lost{opacity:.22; filter:grayscale(1);}
@@ -118,6 +120,7 @@ button{font-family:inherit; color:inherit;}
 
 /* =================== WHACK: FIELD =================== */
 .field-wrap{position:relative;}
+.field-wrap .combo-badge{bottom:14px; right:14px;}
 .field{
   display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:12px 10px 8px;
   border-radius:var(--radius); border:3px solid #fff; outline:3px solid var(--green); outline-offset:-3px; box-shadow:var(--shadow);

@@ -1,20 +1,28 @@
 /* =========================================================
-   חסלט מחסלת · מצב חיסול (הכה-בחפרפרת, 60 שניות)
+   חסלט מחסלת · מצב חיסול (הכה-בחפרפרת) – אינסופי, 3 חיים
+   אויב שברח = חיים פחות. שקית חסלט שנפגעה = חיים פחות. גל חדש כל 20 שניות, מהר יותר.
    ========================================================= */
 (function () {
   'use strict';
 
   const $ = s => document.querySelector(s);
-  const DUR = 60000;
   const field = $('#field'), fieldWrap = field.parentElement;
-  const WAVES = [20000, 40000];
-  const WAVE_TEXT = [
-    { kicker: 'גל 2 מתוך 3', title: 'מהר יותר', sub: 'שניים ביחד. 40 שניות.' },
-    { kicker: 'גל 3 מתוך 3', title: 'הגל האחרון', sub: 'שלושה בו-זמנית. 20 שניות.' }
-  ];
-  const els = { score: $('#wScore'), bar: $('#wBar'), time: $('#wTime'), combo: $('#wCombo'), toast: $('#wToast') };
-  const timerBox = els.bar.closest('.hud__timer');
+  const els = { score: $('#wScore'), bar: $('#wBar'), wave: $('#wWave'), lives: $('#wLives'), toast: $('#wToast'), combo: $('#wComboBadge') };
+  const LIVES = 3, WAVE_MS = 20000;
   const lerp = (a, b, t) => a + (b - a) * t;
+
+  // כל גל: מרווח הופעה, זמן שהאויב נשאר בחוץ, כמה בו-זמנית, סיכוי לשקית
+  function waveCfg(w) {
+    const t = Math.min(1, (w - 1) / 6);
+    return { interval: lerp(950, 320, t), upTime: lerp(1550, 620, t), maxUp: Math.min(4, 1 + Math.floor((w - 1) / 2)), decoy: w === 1 ? .08 : .14 };
+  }
+  const WAVE_INFO = {
+    2: { title: 'מהר יותר', sub: 'צצים מהר יותר, נשארים פחות.' },
+    3: { title: 'שניים ביחד', sub: 'העיניים על כל הבורות.' },
+    4: { title: 'עוד יותר מהר', sub: 'רגע של היסוס = אויב שברח.' },
+    5: { title: 'שלושה בו-זמנית', sub: 'הידיים, לא הראש.' },
+    6: { title: 'הסלק לא נגמר', sub: 'אתם כן, בסוף.' }
+  };
 
   /* ---- בניית 9 בורות ---- */
   const holes = [];
@@ -27,7 +35,7 @@
     holes.push({ el, sprite: el.querySelector('.sprite'), label: el.querySelector('.hole__label'), state: 'empty', enemy: null, decoy: false, upAt: 0, downAt: 0, t: 0 });
   }
 
-  let S = null, raf = 0, toastT = 0, restT = 0;
+  let S = null, raf = 0, toastT = 0, restT = 0, endT = 0;
   // מסך מגע: אין hover, אז היד עם עלי הסלק נשארת גלויה – נחה בתחתית השדה וחוזרת לשם אחרי כל מכה
   const coarse = !!(window.matchMedia && matchMedia('(pointer:coarse)').matches);
   function restHand(glide) {
@@ -38,16 +46,17 @@
   }
 
   function reset() {
-    S = { score: 0, hits: 0, misses: 0, escapes: 0, decoyHits: 0, combo: 0, bestCombo: 0, kills: {}, startAt: 0, nextSpawn: 0, running: false, lastEnemy: null, waveIdx: 0, paused: false };
+    S = { score: 0, hits: 0, misses: 0, escapes: 0, decoyHits: 0, combo: 0, bestCombo: 0, kills: {}, lives: LIVES, wave: 1, waveStart: 0,
+      nextSpawn: 0, running: false, paused: false, aborted: false, lastEnemy: null };
   }
 
   function start() {
     reset();
     holes.forEach(h => clearHole(h));
     S.running = true;
-    S.startAt = performance.now();
-    S.nextSpawn = S.startAt + 500;
-    timerBox.classList.remove('is-rush');
+    const now = performance.now();
+    S.waveStart = now;
+    S.nextSpawn = now + 500;
     els.toast.hidden = true;
     updateHud();
     if (coarse) restHand(false);
@@ -56,9 +65,9 @@
   }
 
   function stop() {
-    if (S) S.running = false;
+    if (S) { S.running = false; S.aborted = true; }
     cancelAnimationFrame(raf);
-    clearTimeout(restT);
+    clearTimeout(restT); clearTimeout(endT);
     Fx.closeInterstitial();
     holes.forEach(h => clearHole(h));
     Fx.Hand.hide();
@@ -72,51 +81,49 @@
   }
 
   function tick(now) {
-    if (!S.running) return;
-    const elapsed = Math.max(0, now - S.startAt), p = Math.min(1, elapsed / DUR), remaining = Math.max(0, DUR - elapsed);
-    els.bar.style.width = (remaining / DUR * 100) + '%';
-    els.time.textContent = Math.ceil(remaining / 1000);
-    timerBox.classList.toggle('is-rush', remaining < 10000);
+    if (!S.running || S.paused) return;
+    const cfg = waveCfg(S.wave);
+    const wp = (now - S.waveStart) / WAVE_MS;
+    els.bar.style.width = (Math.min(1, Math.max(0, wp)) * 100) + '%';
+    if (wp >= 1) return breather(now);
 
     if (now >= S.nextSpawn) {
       const upCount = holes.filter(h => h.state === 'up').length;
-      const maxUp = 1 + (p > .3 ? 1 : 0) + (p > .65 ? 1 : 0);
-      if (upCount < maxUp) spawn(now, p);
-      S.nextSpawn = now + lerp(950, 380, p) * (.75 + Math.random() * .5);
+      if (upCount < cfg.maxUp) spawn(now, cfg);
+      S.nextSpawn = now + cfg.interval * (.75 + Math.random() * .5);
     }
     for (const h of holes) if (h.state === 'up' && now >= h.downAt) escape(h);
-
-    if (remaining <= 0) return end();
-    if (S.waveIdx < WAVES.length && elapsed >= WAVES[S.waveIdx]) return breather(now);
-    raf = requestAnimationFrame(tick);
+    if (S.running && !S.paused) raf = requestAnimationFrame(tick);
   }
 
-  // נשימה בין גלים: השעון עוצר, הבורות מתרוקנים, כרטיס לשנייה וחצי (לחיצה מדלגת)
+  // נשימה בין גלים: הבורות מתרוקנים, כרטיס לשלוש שניות (לחיצה מדלגת), ואז הגל הבא
   function breather(now) {
-    const t = WAVE_TEXT[S.waveIdx];
-    S.waveIdx++;
     S.paused = true;
     cancelAnimationFrame(raf);
     holes.forEach(h => { if (h.state === 'up') goDown(h); });
     clearTimeout(restT);
     Fx.Hand.hide();
     Sfx.play('levelup');
-    Fx.interstitial({ host: fieldWrap, kicker: t.kicker, title: t.title, sub: t.sub, auto: 3000, tapToSkip: true }).then(() => {
+    const next = S.wave + 1;
+    const info = WAVE_INFO[next] || { title: `גל ${next}`, sub: next >= 7 ? 'ארבעה בו-זמנית. בהצלחה.' : '' };
+    Fx.interstitial({ host: fieldWrap, kicker: `גל ${next}`, title: info.title, sub: info.sub, auto: 3000, tapToSkip: true }).then(() => {
       if (!S.running) return;
-      if (coarse) restHand(false);
-      const resumeAt = performance.now();
-      S.startAt += resumeAt - now;          // הזמן שעמדנו לא נספר
-      S.nextSpawn = resumeAt + 350;
+      S.wave = next;
+      const t = performance.now();
+      S.waveStart = t;
+      S.nextSpawn = t + 400;
       S.paused = false;
+      updateHud();
+      if (coarse) restHand(false);
       raf = requestAnimationFrame(tick);
     });
   }
 
-  function spawn(now, p) {
+  function spawn(now, cfg) {
     const empty = holes.filter(h => h.state === 'empty');
     if (!empty.length) return;
     const h = empty[Math.floor(Math.random() * empty.length)];
-    const decoy = p > .06 && Math.random() < .13;
+    const decoy = Math.random() < cfg.decoy;
     h.decoy = decoy;
     h.enemy = decoy ? null : Chars.pickEnemy(S.lastEnemy);
     if (h.enemy) S.lastEnemy = h.enemy.id;
@@ -125,7 +132,7 @@
     void h.sprite.offsetWidth;
     h.sprite.classList.add('up');
     h.state = 'up'; h.upAt = now;
-    let up = lerp(1550, 760, p);
+    let up = cfg.upTime;
     if (decoy) up *= 1.1;
     if (h.enemy && h.enemy.bonus) up *= .8;
     h.downAt = now + up;
@@ -140,15 +147,21 @@
     h.t = setTimeout(() => { h.sprite.className = 'sprite'; h.state = 'empty'; h.enemy = null; h.decoy = false; h.el.classList.remove('has-name'); }, 240);
   }
 
+  /* ---- ברח: חיים פחות ---- */
   function escape(h) {
     const c = Fx.centerOf(h.el);
-    if (h.decoy) { Fx.floatText(c.x, c.y - 24, '', 'is-muted'); goDown(h); return; }   // שקית שירדה – בלי עונש
+    if (h.decoy) { goDown(h); return; }              // שקית שירדה – בלי עונש
     S.escapes++;
     S.combo = 0;
-    S.score = Math.max(0, S.score - 25);
-    Fx.floatText(c.x, c.y - 24, '−25', 'is-bad');
-    updateHud();
     goDown(h);
+    loseLife(c.x, c.y - 24, 'ברח');
+  }
+  function loseLife(x, y, word) {
+    S.lives--;
+    Fx.floatText(x, y, `${word} · −🥬`, 'is-bad');
+    Sfx.play('life');
+    updateHud();
+    if (S.lives <= 0) end();
   }
 
   function onDown(e) {
@@ -157,7 +170,7 @@
     Sfx.unlock();
     const x = e.clientX, y = e.clientY;
     Fx.Hand.slap(x, y);
-    if (coarse) { clearTimeout(restT); restT = setTimeout(() => { if (S && S.running) restHand(true); }, 650); }
+    if (coarse) { clearTimeout(restT); restT = setTimeout(() => { if (S && S.running && !S.paused) restHand(true); }, 650); }
     else if (e.pointerType !== 'mouse') Fx.Hand.hideSoon(420);
 
     const holeEl = e.target.closest ? e.target.closest('.hole') : null;
@@ -173,18 +186,17 @@
     Sfx.play('miss');
   }
 
+  /* ---- פגיעה בשקית חסלט: חיים פחות ---- */
   function hitDecoy(h, x, y) {
     S.decoyHits++;
-    S.score = Math.max(0, S.score - 150);
     S.combo = 0;
     h.state = 'hit';
     h.sprite.classList.add('hit');
     Sfx.play('bad');
-    Fx.floatText(x, y - 14, '−150', 'is-bad');
     toast('אוי! זה <b>חסלט</b> 😱', 'is-bad');
     clearTimeout(h.t);
     h.t = setTimeout(() => goDown(h), 450);
-    updateHud(true);
+    loseLife(x, y - 14, 'חסלט!');
   }
 
   function hit(h, x, y, now) {
@@ -193,7 +205,7 @@
     S.bestCombo = Math.max(S.bestCombo, S.combo);
     const mult = Math.min(5, 1 + Math.floor(S.combo / 3));
     const fast = now - h.upAt < 420;
-    const pts = e.points * mult + (fast ? 50 : 0) + S.waveIdx * 10;   // ניקוד אחיד: דמות × קומבו + מהיר + מדרגה
+    const pts = e.points * mult + (fast ? 50 : 0) + (S.wave - 1) * 10;   // ניקוד אחיד: דמות × קומבו + מהיר + מדרגה
     S.score += pts;
     S.kills[e.id] = (S.kills[e.id] || 0) + 1;
     App.stats.addKill(e.id);
@@ -228,25 +240,35 @@
   function updateHud(bump) {
     els.score.textContent = S.score.toLocaleString('he-IL');
     if (bump) { els.score.classList.remove('bump'); void els.score.offsetWidth; els.score.classList.add('bump'); }
+    els.wave.textContent = S.wave;
+    let lives = '';
+    for (let i = 0; i < LIVES; i++) lives += `<span class="${i < S.lives ? '' : 'lost'}">🥬</span>`;
+    els.lives.innerHTML = lives;
     const mult = Math.min(5, 1 + Math.floor(S.combo / 3));
-    els.combo.textContent = '×' + mult + (S.combo > 0 ? ` · ${S.combo}` : '');
+    els.combo.hidden = mult <= 1;
+    els.combo.textContent = `קומבו ×${mult}`;
   }
 
   function end() {
     S.running = false;
     cancelAnimationFrame(raf);
-    holes.forEach(h => { if (h.state === 'up' || h.state === 'hit') goDown(h); });
     clearTimeout(restT);
+    holes.forEach(h => { if (h.state === 'up' || h.state === 'hit') goDown(h); });
     Fx.Hand.hide();
     Sfx.play('over');
-    const tries = S.hits + S.misses + S.decoyHits;
-    const acc = tries ? Math.round(S.hits / tries * 100) : 0;
-    App.showResult({ mode: 'whack', score: S.score, hits: S.hits, accuracy: acc, bestCombo: S.bestCombo, decoyHits: S.decoyHits, escapes: S.escapes, kills: S.kills });
+    const snap = S;
+    clearTimeout(endT);
+    endT = setTimeout(() => {
+      if (snap.aborted) return;
+      const tries = snap.hits + snap.misses + snap.decoyHits;
+      App.showResult({ mode: 'whack', score: snap.score, hits: snap.hits, wave: snap.wave, accuracy: tries ? Math.round(snap.hits / tries * 100) : 0,
+        bestCombo: snap.bestCombo, decoyHits: snap.decoyHits, escapes: snap.escapes, kills: snap.kills });
+    }, 900);
   }
 
   field.addEventListener('pointerdown', onDown);
   field.addEventListener('pointermove', e => {
-    if (e.pointerType === 'mouse' && S && S.running) { Fx.Hand.cancelHide(); Fx.Hand.moveTo(e.clientX, e.clientY); Fx.Hand.show(); }
+    if (e.pointerType === 'mouse' && S && S.running && !S.paused) { Fx.Hand.cancelHide(); Fx.Hand.moveTo(e.clientX, e.clientY); Fx.Hand.show(); }
   });
   field.addEventListener('pointerleave', e => { if (e.pointerType === 'mouse') Fx.Hand.hide(); });
   field.addEventListener('contextmenu', e => e.preventDefault());

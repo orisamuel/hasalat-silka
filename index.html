@@ -47,7 +47,7 @@
           <span class="mode__icon" id="modeWhackIcon" aria-hidden="true"></span>
           <span class="mode__text">
             <b>מצב חיסול</b>
-            <span>צצים מהאדמה, חוטפים עלה. 60 שניות.</span>
+            <span>צצים מהאדמה, חוטפים עלה. מי שברח לוקח חיים.</span>
             <em id="bestWhack">שיא: —</em>
           </span>
         </button>
@@ -83,14 +83,15 @@
       <div class="hud">
         <div class="hud__stat"><span>ניקוד</span><b id="wScore">0</b></div>
         <div class="hud__timer">
+          <span class="hud__wave">גל <b id="wWave">1</b></span>
           <div class="bar"><i id="wBar"></i></div>
-          <b id="wTime">60</b>
         </div>
-        <div class="hud__stat"><span>קומבו</span><b id="wCombo">×1</b></div>
+        <div class="hud__stat"><span>חיים</span><b id="wLives" class="lives">🥬🥬🥬</b></div>
       </div>
 
       <div class="field-wrap">
         <div class="field" id="field" aria-label="שדה החיסולים"></div>
+        <div class="combo-badge" id="wComboBadge" hidden></div>
         <div class="toast" id="wToast" hidden></div>
       </div>
 

@@ -34,13 +34,14 @@
 
   // קושי לפי מספר הגל: כמות צונחים, מהירות נפילה, קצב הופעה, כמה בו-זמנית, כמה שקיות חסלט לתפוס
   function waveCfg(w) {
-    const t = clamp((w - 1) / 8, 0, 1);
+    const t = clamp((w - 1) / 6, 0, 1);
     return {
-      count: 5 + w * 2,
-      vy: lerp(72, 172, t),
-      interval: lerp(1500, 620, t),
-      maxUp: Math.min(4, 2 + Math.floor((w - 1) / 2)),
-      decoys: w >= 5 ? 2 : (w >= 2 ? 1 : 0)
+      count: 6 + w * 2,
+      vy: lerp(85, 215, t),
+      interval: lerp(1300, 480, t),
+      maxUp: Math.min(5, 2 + Math.floor(w / 2)),
+      sway: lerp(14, 44, t),
+      decoys: w >= 7 ? 3 : (w >= 4 ? 2 : (w >= 2 ? 1 : 0))
     };
   }
 
@@ -160,7 +161,7 @@
     const color = decoy ? '#6FB23C' : CANOPIES[Math.floor(Math.random() * CANOPIES.length)];
     el.innerHTML = `<div class="faller__chute">${chute(color)}</div><div class="fsprite">${decoy ? Products.renderDecoy() : Chars.enemySvg(e)}</div>`;
     sky.appendChild(el);
-    const sway = 8 + Math.random() * 22;
+    const sway = S.cfg.sway * (.6 + Math.random() * .8);
     const f = { el, enemy: e, decoy, x0: clamp(sway + 6 + Math.random() * (W - FW - sway * 2 - 12), 0, Math.max(0, W - FW)), x: 0, y: -FH + 60,
       vy: S.cfg.vy * (decoy ? 1.1 : 1) * (e && e.bonus ? 1.3 : 1), sway, born: now, state: 'falling', removed: false };
     f.x = f.x0;
@@ -248,18 +249,19 @@
     updateHud(true);
     resolved();
   }
+  // ירייה על שקית חסלט: חיים פחות
   function hitDecoy(f, cx, cy) {
     f.state = 'hit';
     S.decoyHits++;
-    S.score = Math.max(0, S.score - 150);
-    S.combo = 0;
+    S.combo = 0; S.lives--;
     f.el.querySelector('.fsprite').classList.add('hit');
     f.el.classList.add('is-hit');
     removeSoon(f, 700);
-    Sfx.play('bad');
-    Fx.floatText(cx, cy - 24, '−150', 'is-bad');
+    Sfx.play('bad'); Sfx.play('life');
+    Fx.floatText(cx, cy - 24, 'חסלט! · −🥬', 'is-bad');
     toast('אוי! זה <b>חסלט</b> 😱 תופסים, לא יורים', 'is-bad');
-    updateHud(true);
+    updateHud();
+    if (S.lives <= 0) return end();
     resolved();
   }
 
@@ -290,7 +292,7 @@
     f.el.classList.add('is-landed');
     removeSoon(f, 600);
     Sfx.play('life');
-    Fx.floatText(cx, cy - 30, 'נחת', 'is-bad');
+    Fx.floatText(cx, cy - 30, 'נחת · −🥬', 'is-bad');
     toast(`<b>${f.enemy.name}</b> נחת`, 'is-bad');
     updateHud();
     if (S.lives <= 0) return end();
