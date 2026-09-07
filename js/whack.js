@@ -98,9 +98,12 @@
     S.paused = true;
     cancelAnimationFrame(raf);
     holes.forEach(h => { if (h.state === 'up') goDown(h); });
+    clearTimeout(restT);
+    Fx.Hand.hide();
     Sfx.play('levelup');
     Fx.interstitial({ host: fieldWrap, kicker: t.kicker, title: t.title, sub: t.sub, auto: 1500, tapToSkip: true }).then(() => {
       if (!S.running) return;
+      if (coarse) restHand(false);
       const resumeAt = performance.now();
       S.startAt += resumeAt - now;          // הזמן שעמדנו לא נספר
       S.nextSpawn = resumeAt + 350;
